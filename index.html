@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -314,6 +314,11 @@ tbody tr:hover td{background:var(--ink3)}
 @media(max-width:700px){.strat-field-row{grid-template-columns:1fr 1fr}}
 
 footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-align:center;letter-spacing:.05em}
+
+/* LANG SWITCHER */
+.lang-switcher{display:flex;background:var(--ink3);border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
+.lang-btn{padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted2);transition:all .12s}
+.lang-btn.active{background:var(--violet);color:#fff}
 </style>
 </head>
 <body>
@@ -328,22 +333,22 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
           <div class="brand-name">DCA Compass</div>
         </div>
       </div>
-      <div class="brand-sub">USA · Brazil · Cross-Currency Simulator</div>
+      <div class="brand-sub" data-i18n="brand_sub">USA · Brazil · Cross-Currency Simulator</div>
     </div>
 
     <div class="sidebar-body">
 
-      <div class="section-label">Quick Presets</div>
+      <div class="section-label" data-i18n="section_presets">Quick Presets</div>
       <div class="presets" id="presets"></div>
 
-      <div class="section-label">Portfolio</div>
+      <div class="section-label" data-i18n="section_portfolio">Portfolio</div>
       <div class="holdings" id="holdings"></div>
       <div class="wt-total" id="wt-total"></div>
 
       <!-- type selector -->
       <div class="type-pills">
-        <button class="type-pill active" data-atype="equity">📈 Equity/ETF</button>
-        <button class="type-pill fi-type" data-atype="fi">🏦 Fixed Income</button>
+        <button class="type-pill active" data-atype="equity" data-i18n="pill_equity">📈 Equity/ETF</button>
+        <button class="type-pill fi-type" data-atype="fi" data-i18n="pill_fi">🏦 Fixed Income</button>
       </div>
 
       <!-- equity add -->
@@ -366,22 +371,19 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
 
       <!-- FI add -->
       <div id="fi-add-row" style="display:none">
-        <div class="fi-info-box">
-          <strong>Fixed Income</strong> — synthetic compounded series, no market data needed.<br>
-          Supported: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, or any custom rate.
+        <div class="fi-info-box" data-i18n-html="fi_info"></div>
+        <div class="fi-rate-row">
+          <div class="field"><label data-i18n="fi_name_label">Name / Label</label><input type="text" id="fi-name" placeholder="e.g. CDB 12%" maxlength="20"></div>
+          <div class="field"><label data-i18n="fi_weight_label">Weight %</label><input type="number" id="fi-wt" value="10" min="1" max="100"></div>
         </div>
         <div class="fi-rate-row">
-          <div class="field"><label>Name / Label</label><input type="text" id="fi-name" placeholder="e.g. CDB 12%" maxlength="20"></div>
-          <div class="field"><label>Weight %</label><input type="number" id="fi-wt" value="10" min="1" max="100"></div>
-        </div>
-        <div class="fi-rate-row">
-          <div class="field"><label>Annual Rate %</label><input type="number" id="fi-rate" value="12" step="0.1" min="0" max="100"></div>
-          <div class="field"><label>Currency</label>
+          <div class="field"><label data-i18n="fi_rate_label">Annual Rate %</label><input type="number" id="fi-rate" value="12" step="0.1" min="0" max="100"></div>
+          <div class="field"><label data-i18n="fi_currency_label">Currency</label>
             <select id="fi-cur"><option value="BRL">🇧🇷 BRL</option><option value="USD">🇺🇸 USD</option></select>
           </div>
         </div>
         <div class="field" style="margin-bottom:8px">
-          <label>Presets</label>
+          <label data-i18n="fi_presets_label">Presets</label>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             <button class="preset" data-fi-preset="CDB 12%,12,BRL">CDB 12%</button>
             <button class="preset" data-fi-preset="CDB CDI,13.65,BRL">CDB CDI</button>
@@ -390,37 +392,32 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
             <button class="preset" data-fi-preset="T-Bill,5.25,USD">T-Bill</button>
           </div>
         </div>
-        <button class="btn-add-text" id="btn-add-fi">+ Add Fixed Income</button>
+        <button class="btn-add-text" id="btn-add-fi" data-i18n="btn_add_fi">+ Add Fixed Income</button>
       </div>
 
-      <div class="note" style="margin-top:9px">
-        <strong>US ETFs:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br>
-        <strong>Brazil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br>
-        <strong>FI:</strong> CDB, LCI, I-Bond, T-Bill (synthetic, no fetch)<br>
-        <strong>Tip:</strong> Double-click any holding to edit inline
-      </div>
+      <div class="note" style="margin-top:9px" data-i18n-html="note_tickers"></div>
 
-      <div class="section-label">Date Range</div>
+      <div class="section-label" data-i18n="section_dates">Date Range</div>
       <div class="field-row">
-        <div class="field"><label>Start Date</label><input type="date" id="start-date" value="2020-01-01"></div>
-        <div class="field"><label>End Date</label><input type="date" id="end-date"></div>
+        <div class="field"><label data-i18n="label_start_date">Start Date</label><input type="date" id="start-date" value="2020-01-01"></div>
+        <div class="field"><label data-i18n="label_end_date">End Date</label><input type="date" id="end-date"></div>
       </div>
 
-      <div class="section-label">Investment Period</div>
+      <div class="section-label" data-i18n="section_period">Investment Period</div>
       <div class="period-pills" id="period-pills"></div>
-      <div style="font-size:10px;color:var(--muted);margin-top:5px;font-family:'IBM Plex Mono',monospace" id="period-desc">Invest every 30 days</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:5px;font-family:'IBM Plex Mono',monospace" id="period-desc"></div>
 
-      <div class="section-label">Periodic Investment</div>
+      <div class="section-label" data-i18n="section_amount">Periodic Investment</div>
       <div class="amt-row">
-        <div class="field amt-field"><label>USD per period</label><span class="currency">$</span><input type="number" id="amt-usd" value="500" min="0" placeholder="0"></div>
-        <div class="field amt-field"><label>BRL per period</label><span class="currency">R$</span><input type="number" id="amt-brl" value="0" min="0" placeholder="0"></div>
+        <div class="field amt-field"><label data-i18n="label_usd_period">USD per period</label><span class="currency">$</span><input type="number" id="amt-usd" value="500" min="0" placeholder="0"></div>
+        <div class="field amt-field"><label data-i18n="label_brl_period">BRL per period</label><span class="currency">R$</span><input type="number" id="amt-brl" value="0" min="0" placeholder="0"></div>
       </div>
-      <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:2px">Both currencies accepted. BRL uses historical FX rate at time of each purchase.</div>
+      <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:2px" data-i18n="amt_note">Both currencies accepted. BRL uses historical FX rate at time of each purchase.</div>
 
     </div>
 
     <div class="sidebar-footer">
-      <button class="btn-run" id="btn-run">RUN SIMULATION</button>
+      <button class="btn-run" id="btn-run" data-i18n="btn_run">RUN SIMULATION</button>
       <div class="error-msg" id="error-msg" style="display:none"></div>
     </div>
   </aside>
@@ -429,10 +426,14 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
   <main class="main">
     <div class="main-header">
       <div>
-        <div class="main-title" id="panel-title">Portfolio Results</div>
-        <div class="main-sub" id="panel-sub">Configure your portfolio and run the simulation</div>
+        <div class="main-title" id="panel-title" data-i18n="panel_title">Portfolio Results</div>
+        <div class="main-sub" id="panel-sub" data-i18n="panel_sub">Configure your portfolio and run the simulation</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
+        <div class="lang-switcher">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="pt">PT</button>
+        </div>
         <div class="cur-switcher">
           <button class="cur-btn active" data-cur="USD">USD $</button>
           <button class="cur-btn" data-cur="BRL">BRL R$</button>
@@ -443,21 +444,396 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
     <div class="main-body">
       <div id="panel-empty" class="empty">
         <div class="empty-icon">📡</div>
-        <h2>Ready to Simulate</h2>
-        <p>Build your portfolio on the left, set your DCA parameters, and hit Run Simulation to see historical returns in both USD and BRL.</p>
+        <h2 data-i18n="empty_title">Ready to Simulate</h2>
+        <p data-i18n="empty_desc">Build your portfolio on the left, set your DCA parameters, and hit Run Simulation to see historical returns in both USD and BRL.</p>
       </div>
       <div id="panel-loading" class="loading-state" style="display:none">
-        <div class="loading-ticker" id="loading-ticker">FETCHING DATA</div>
+        <div class="loading-ticker" id="loading-ticker" data-i18n="loading_fetching">FETCHING DATA</div>
         <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
         <div class="progress-items" id="progress-items"></div>
       </div>
       <div id="panel-results" style="display:none"></div>
     </div>
-    <footer>Data via Yahoo Finance (public API) · FX applied at each purchase date · For educational purposes only — not financial advice</footer>
+    <footer data-i18n="footer_text">Data via Yahoo Finance (public API) · FX applied at each purchase date · For educational purposes only — not financial advice</footer>
   </main>
 </div>
 
 <script>
+// ================================================================
+//  TRANSLATIONS
+// ================================================================
+const TRANSLATIONS = {
+  en: {
+    brand_sub: "USA · Brazil · Cross-Currency Simulator",
+    section_presets: "Quick Presets",
+    section_portfolio: "Portfolio",
+    pill_equity: "📈 Equity/ETF",
+    pill_fi: "🏦 Fixed Income",
+    fi_info: "<strong>Fixed Income</strong> — synthetic compounded series, no market data needed.<br>Supported: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, or any custom rate.",
+    fi_name_label: "Name / Label",
+    fi_weight_label: "Weight %",
+    fi_rate_label: "Annual Rate %",
+    fi_currency_label: "Currency",
+    fi_presets_label: "Presets",
+    btn_add_fi: "+ Add Fixed Income",
+    note_tickers: "<strong>US ETFs:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brazil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>FI:</strong> CDB, LCI, I-Bond, T-Bill (synthetic, no fetch)<br><strong>Tip:</strong> Double-click any holding to edit inline",
+    section_dates: "Date Range",
+    label_start_date: "Start Date",
+    label_end_date: "End Date",
+    section_period: "Investment Period",
+    section_amount: "Periodic Investment",
+    label_usd_period: "USD per period",
+    label_brl_period: "BRL per period",
+    amt_note: "Both currencies accepted. BRL uses historical FX rate at time of each purchase.",
+    btn_run: "RUN SIMULATION",
+    panel_title: "Portfolio Results",
+    panel_sub: "Configure your portfolio and run the simulation",
+    empty_title: "Ready to Simulate",
+    empty_desc: "Build your portfolio on the left, set your DCA parameters, and hit Run Simulation to see historical returns in both USD and BRL.",
+    loading_fetching: "FETCHING DATA",
+    footer_text: "Data via Yahoo Finance (public API) · FX applied at each purchase date · For educational purposes only — not financial advice",
+    period_desc: d => `Invest every ${d} day${d===1?'':'s'}`,
+    wt_label: (total, status) => `Weights: ${total}% ${status==='ok'?'✓':status==='over'?'▲ over':'▼ under'}`,
+    tab_overview: "Overview",
+    tab_gains: "Gains",
+    tab_fx: "FX · Currency",
+    tab_optimizer: "⚡ Optimizer",
+    tab_signals: "Signals",
+    tab_history: "History",
+    tab_breakdown: "Breakdown",
+    stat_portfolio_value: "Portfolio Value",
+    stat_cost_basis: "Cost basis",
+    stat_total_return: "Total Return",
+    stat_gain: "Gain",
+    stat_return_usd: "Return USD",
+    stat_return_brl: "Return BRL",
+    stat_invested: "invested",
+    stat_basis: "basis",
+    chart_portfolio_vs_invested: "Portfolio Value vs Amount Invested",
+    chart_value: "Value",
+    chart_cost_basis: "Cost Basis",
+    chart_unrealized_gain: "Unrealized Gain / Loss",
+    chart_fx_rate: "USD / BRL Exchange Rate",
+    fx_current: "Current FX",
+    fx_change: "FX Change",
+    fx_impact: "FX Impact on BRL Return",
+    fx_start: "Start FX",
+    fx_note: "ℹ BRL cost basis uses the actual historical FX rate on each purchase date. BRL return = (current USD value × current FX) / (Σ USD invested × FX at purchase date) − 1.",
+    opt_settings_title: "⚡ Strategy Optimizer Settings",
+    opt_annual_budget: "Annual Budget (USD)",
+    opt_lookback: "Lookback Window",
+    opt_lookback_same: "Same as simulation",
+    opt_lookback_1y: "Last 1 Year",
+    opt_lookback_3y: "Last 3 Years",
+    opt_lookback_5y: "Last 5 Years",
+    opt_lookback_10y: "Last 10 Years",
+    opt_step: "Weight Step Size",
+    opt_step_10: "10% steps (faster)",
+    opt_step_5: "5% steps (precise)",
+    btn_find_optimal: "⚡ Find Optimal Strategy",
+    th_date: "Date",
+    th_value_usd: "Value USD",
+    th_value_brl: "Value BRL",
+    th_cost_usd: "Cost Basis USD",
+    th_cost_brl: "Cost Basis BRL",
+    th_gain_usd: "Gain USD",
+    th_ret_pct: "Ret %",
+    th_fx: "FX",
+    th_asset: "Asset",
+    th_type: "Type",
+    th_weight: "Weight",
+    th_units: "Units",
+    th_final_value: "Final Value USD",
+    th_return: "Return %",
+    th_purchases: "Purchases",
+    sig_type: "Type",
+    sig_annual_rate: "Annual Rate",
+    sig_currency: "Currency",
+    sig_period_return: "Period Return",
+    sig_volatility: "Volatility",
+    sig_dca_signal: "DCA Signal",
+    sig_always_invest: "Always Invest",
+    sig_synthetic_vol: "~0% (synthetic)",
+    sig_not_enough: "Need 30+ days of data for signals",
+    sig_last_price: "Last Price",
+    sig_sma: "SMA 20/50",
+    sig_trend: "Trend",
+    sig_rsi: "RSI (14)",
+    sig_rsi_signal: "RSI Signal",
+    sig_ann_vol: "Ann. Vol",
+    sig_1m_3m: "1M / 3M",
+    sig_1y_return: "1Y Return",
+    sig_bullish: "Bullish",
+    sig_bearish: "Bearish",
+    sig_overbought: "Overbought",
+    sig_oversold: "Oversold",
+    sig_neutral: "Neutral",
+    sig_good_entry: "Good Entry",
+    sig_caution: "Caution",
+    sig_fi_type: "Fixed Income",
+    opt_optimal_found: "🏆 Optimal DCA Strategy Found",
+    opt_invest: "Invest",
+    opt_on: "on",
+    opt_tuesdays: "Tuesdays",
+    opt_allocation: "Allocation",
+    opt_lookback_window: "Lookback window",
+    opt_best: "Best",
+    opt_total_return: "Total Return",
+    opt_final: "final",
+    opt_invested: "invested",
+    opt_ann_return: "Ann. Return (CAGR)",
+    opt_per_year: "Per year",
+    opt_period: "yr period",
+    opt_best_freq: "Best Frequency",
+    opt_every: "Every",
+    opt_per_period: "Per-Period Amount",
+    opt_yr: "/yr",
+    opt_purchases: "purchases",
+    opt_return_usd: "Return USD",
+    opt_top5: "Top 5 Strategies",
+    opt_best_badge: "#1 Best",
+    opt_return_matrix: "Return Matrix — All Allocations × Frequencies",
+    opt_total_return_pct: "total return %",
+    opt_show_top: n => `Showing top 60 of ${n} combinations.`,
+    opt_best_by_freq: "Best Return by Frequency",
+    opt_optimal_alloc: "Optimal Allocation Each",
+    opt_return_label: "Return:",
+    opt_footer: (step, budget, total) => `★ Best overall · Purchases always on Tuesdays · ${step}% weight steps · Budget: ${budget}/yr · ${total} strategies tested`,
+    opt_click_hint: "Click any cell in the matrix to see full strategy details · CAGR shown in sub-labels (annualized return)",
+    strat_detail_title: "📋 Strategy Detail",
+    strat_frequency: "Frequency",
+    strat_return: "Return",
+    strat_cagr: "CAGR (annualized)",
+    strat_final_value: "Final Value",
+    strat_total_invested: "Total Invested",
+    strat_gain: "Gain",
+    strat_purchases: "Purchases",
+    strat_per_period: "Per Period",
+    strat_invest_desc: (amt, days) => `Invest ${amt} every <strong>${days} days</strong> on <strong>Tuesdays</strong>`,
+    err_add_asset: "Add at least one asset.",
+    err_set_dates: "Set start and end dates.",
+    err_set_amount: "Enter an investment amount.",
+    err_date_order: "Start date must be before end date.",
+    err_all_failed: "All tickers failed to load:",
+    warn_some_failed: "⚠ Some tickers could not be fetched and were skipped:",
+    confirm_add_unverified: sym => `"${sym}" could not be verified on Yahoo Finance.\nAdd it anyway?`,
+    optimizing: "Optimizing…",
+    running_optimization: "Running optimization…",
+    dblclick_hint: "dbl-click",
+    title_dblclick: "Double-click to edit",
+    sim_sub: (start, end, days, purchases) => `${start} → ${end} · DCA every ${days}d · ${purchases} purchases`,
+    loading_ticker: sym => `LOADING ${sym}`,
+    loading_fx: "LOADING FX DATA",
+    loading_calc: "CALCULATING",
+    progress_fx: "💱 USD/BRL exchange rate",
+    progress_calc: "⚙ Running DCA engine",
+  },
+  pt: {
+    brand_sub: "EUA · Brasil · Simulador Multicâmbio",
+    section_presets: "Portfólios Prontos",
+    section_portfolio: "Portfólio",
+    pill_equity: "📈 Ações/ETF",
+    pill_fi: "🏦 Renda Fixa",
+    fi_info: "<strong>Renda Fixa</strong> — série sintética de juros compostos, sem dados de mercado.<br>Suportado: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, ou qualquer taxa personalizada.",
+    fi_name_label: "Nome / Rótulo",
+    fi_weight_label: "Peso %",
+    fi_rate_label: "Taxa Anual %",
+    fi_currency_label: "Moeda",
+    fi_presets_label: "Predefinições",
+    btn_add_fi: "+ Adicionar Renda Fixa",
+    note_tickers: "<strong>ETFs EUA:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brasil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>RF:</strong> CDB, LCI, I-Bond, T-Bill (sintético, sem busca)<br><strong>Dica:</strong> Clique duplo em qualquer ativo para editar",
+    section_dates: "Período",
+    label_start_date: "Data Inicial",
+    label_end_date: "Data Final",
+    section_period: "Frequência do Aporte",
+    section_amount: "Valor do Aporte",
+    label_usd_period: "USD por período",
+    label_brl_period: "BRL por período",
+    amt_note: "Ambas as moedas aceitas. BRL usa a taxa de câmbio histórica na data de cada compra.",
+    btn_run: "SIMULAR",
+    panel_title: "Resultados do Portfólio",
+    panel_sub: "Configure seu portfólio e execute a simulação",
+    empty_title: "Pronto para Simular",
+    empty_desc: "Monte seu portfólio à esquerda, defina os parâmetros do DCA e clique em Simular para ver os retornos históricos em USD e BRL.",
+    loading_fetching: "BUSCANDO DADOS",
+    footer_text: "Dados via Yahoo Finance (API pública) · Câmbio aplicado em cada data de compra · Apenas para fins educacionais — não é conselho financeiro",
+    period_desc: d => `Aportar a cada ${d} dia${d===1?'':'s'}`,
+    wt_label: (total, status) => `Pesos: ${total}% ${status==='ok'?'✓':status==='over'?'▲ acima':'▼ abaixo'}`,
+    tab_overview: "Visão Geral",
+    tab_gains: "Ganhos",
+    tab_fx: "Câmbio",
+    tab_optimizer: "⚡ Otimizador",
+    tab_signals: "Sinais",
+    tab_history: "Histórico",
+    tab_breakdown: "Detalhamento",
+    stat_portfolio_value: "Valor do Portfólio",
+    stat_cost_basis: "Custo médio",
+    stat_total_return: "Retorno Total",
+    stat_gain: "Ganho",
+    stat_return_usd: "Retorno USD",
+    stat_return_brl: "Retorno BRL",
+    stat_invested: "investido",
+    stat_basis: "base",
+    chart_portfolio_vs_invested: "Valor do Portfólio vs Valor Investido",
+    chart_value: "Valor",
+    chart_cost_basis: "Custo Médio",
+    chart_unrealized_gain: "Ganho / Perda Não Realizado",
+    chart_fx_rate: "Taxa USD / BRL",
+    fx_current: "Câmbio Atual",
+    fx_change: "Variação do Câmbio",
+    fx_impact: "Impacto do Câmbio no Retorno BRL",
+    fx_start: "Câmbio Inicial",
+    fx_note: "ℹ O custo em BRL usa a taxa de câmbio histórica real em cada data de compra. Retorno BRL = (valor USD atual × câmbio atual) / (Σ USD investido × câmbio na data da compra) − 1.",
+    opt_settings_title: "⚡ Configurações do Otimizador",
+    opt_annual_budget: "Orçamento Anual (USD)",
+    opt_lookback: "Janela de Análise",
+    opt_lookback_same: "Mesmo da simulação",
+    opt_lookback_1y: "Último 1 Ano",
+    opt_lookback_3y: "Últimos 3 Anos",
+    opt_lookback_5y: "Últimos 5 Anos",
+    opt_lookback_10y: "Últimos 10 Anos",
+    opt_step: "Incremento de Peso",
+    opt_step_10: "Passos de 10% (mais rápido)",
+    opt_step_5: "Passos de 5% (mais preciso)",
+    btn_find_optimal: "⚡ Encontrar Estratégia Ótima",
+    th_date: "Data",
+    th_value_usd: "Valor USD",
+    th_value_brl: "Valor BRL",
+    th_cost_usd: "Custo Médio USD",
+    th_cost_brl: "Custo Médio BRL",
+    th_gain_usd: "Ganho USD",
+    th_ret_pct: "Ret %",
+    th_fx: "Câmbio",
+    th_asset: "Ativo",
+    th_type: "Tipo",
+    th_weight: "Peso",
+    th_units: "Cotas",
+    th_final_value: "Valor Final USD",
+    th_return: "Retorno %",
+    th_purchases: "Aportes",
+    sig_type: "Tipo",
+    sig_annual_rate: "Taxa Anual",
+    sig_currency: "Moeda",
+    sig_period_return: "Retorno no Período",
+    sig_volatility: "Volatilidade",
+    sig_dca_signal: "Sinal DCA",
+    sig_always_invest: "Sempre Aportar",
+    sig_synthetic_vol: "~0% (sintético)",
+    sig_not_enough: "Precisa de 30+ dias de dados para sinais",
+    sig_last_price: "Último Preço",
+    sig_sma: "MMA 20/50",
+    sig_trend: "Tendência",
+    sig_rsi: "RSI (14)",
+    sig_rsi_signal: "Sinal RSI",
+    sig_ann_vol: "Vol. Anual",
+    sig_1m_3m: "1M / 3M",
+    sig_1y_return: "Retorno 1A",
+    sig_bullish: "Alta",
+    sig_bearish: "Baixa",
+    sig_overbought: "Sobrecomprado",
+    sig_oversold: "Sobrevendido",
+    sig_neutral: "Neutro",
+    sig_good_entry: "Bom Ponto de Entrada",
+    sig_caution: "Cautela",
+    sig_fi_type: "Renda Fixa",
+    opt_optimal_found: "🏆 Estratégia DCA Ótima Encontrada",
+    opt_invest: "Investir",
+    opt_on: "às",
+    opt_tuesdays: "Terças-feiras",
+    opt_allocation: "Alocação",
+    opt_lookback_window: "Janela de análise",
+    opt_best: "Melhor",
+    opt_total_return: "Retorno Total",
+    opt_final: "final",
+    opt_invested: "investido",
+    opt_ann_return: "Retorno Anual (CAGR)",
+    opt_per_year: "Por ano",
+    opt_period: "anos de período",
+    opt_best_freq: "Melhor Frequência",
+    opt_every: "A cada",
+    opt_per_period: "Valor por Período",
+    opt_yr: "/ano",
+    opt_purchases: "aportes",
+    opt_return_usd: "Retorno USD",
+    opt_top5: "Top 5 Estratégias",
+    opt_best_badge: "#1 Melhor",
+    opt_return_matrix: "Matriz de Retornos — Todas Alocações × Frequências",
+    opt_total_return_pct: "retorno total %",
+    opt_show_top: n => `Mostrando top 60 de ${n} combinações.`,
+    opt_best_by_freq: "Melhor Retorno por Frequência",
+    opt_optimal_alloc: "Alocação Ótima de Cada",
+    opt_return_label: "Retorno:",
+    opt_footer: (step, budget, total) => `★ Melhor geral · Aportes sempre às Terças · passos de ${step}% · Orçamento: ${budget}/ano · ${total} estratégias testadas`,
+    opt_click_hint: "Clique em qualquer célula da matriz para ver detalhes · CAGR mostrado nos sub-rótulos (retorno anualizado)",
+    strat_detail_title: "📋 Detalhe da Estratégia",
+    strat_frequency: "Frequência",
+    strat_return: "Retorno",
+    strat_cagr: "CAGR (anualizado)",
+    strat_final_value: "Valor Final",
+    strat_total_invested: "Total Investido",
+    strat_gain: "Ganho",
+    strat_purchases: "Aportes",
+    strat_per_period: "Por Período",
+    strat_invest_desc: (amt, days) => `Investir ${amt} a cada <strong>${days} dias</strong> às <strong>Terças-feiras</strong>`,
+    err_add_asset: "Adicione pelo menos um ativo.",
+    err_set_dates: "Defina as datas de início e fim.",
+    err_set_amount: "Informe um valor de aporte.",
+    err_date_order: "A data inicial deve ser anterior à data final.",
+    err_all_failed: "Todos os ativos falharam ao carregar:",
+    warn_some_failed: "⚠ Alguns ativos não puderam ser carregados e foram ignorados:",
+    confirm_add_unverified: sym => `"${sym}" não pôde ser verificado no Yahoo Finance.\nAdicionar mesmo assim?`,
+    optimizing: "Otimizando…",
+    running_optimization: "Executando otimização…",
+    dblclick_hint: "duplo clique",
+    title_dblclick: "Clique duplo para editar",
+    sim_sub: (start, end, days, purchases) => `${start} → ${end} · DCA a cada ${days}d · ${purchases} aportes`,
+    loading_ticker: sym => `CARREGANDO ${sym}`,
+    loading_fx: "CARREGANDO CÂMBIO",
+    loading_calc: "CALCULANDO",
+    progress_fx: "💱 Taxa USD/BRL",
+    progress_calc: "⚙ Executando motor DCA",
+  }
+};
+
+// ================================================================
+//  I18N ENGINE
+// ================================================================
+let currentLang = localStorage.getItem('dca_lang') || 'en';
+
+function t(key) {
+  const val = TRANSLATIONS[currentLang][key] || TRANSLATIONS['en'][key];
+  return typeof val === 'function' ? val : (val || key);
+}
+
+function applyTranslations() {
+  document.getElementById('html-root').lang = currentLang === 'pt' ? 'pt-BR' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = TRANSLATIONS[currentLang][key];
+    if (val !== undefined && typeof val !== 'function') el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.dataset.i18nHtml;
+    const val = TRANSLATIONS[currentLang][key];
+    if (val !== undefined) el.innerHTML = val;
+  });
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('dca_lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  applyTranslations();
+  // Re-render dynamic parts that depend on language
+  renderHoldings();
+  // Update period desc
+  const d = PERIODS.find(p => p.label === state.period)?.days;
+  if (d) $('period-desc').textContent = t('period_desc')(d);
+  // Update btn-run text (unless loading)
+  const btn = $('btn-run');
+  if (btn && !btn.disabled) btn.textContent = t('btn_run');
+}
+
 // ================================================================
 //  CONSTANTS
 // ================================================================
@@ -646,12 +1022,12 @@ function setValState(vs,msg){
 function scheduleValidation(sym){
   clearTimeout(state.validationTimer);
   if(!sym){setValState('idle');return}
-  setValState('loading','Checking…');
+  setValState('loading',currentLang==='pt'?'Verificando…':'Checking…');
   state.validationTimer=setTimeout(async()=>{
     const r=await validateTicker(sym);
     if(r===null){setValState('idle','');return}
-    if(r.valid) setValState('valid',r.name?`✓ ${r.name}`:'✓ Valid');
-    else setValState('invalid',`✗ "${sym.toUpperCase()}" not found — check symbol`);
+    if(r.valid) setValState('valid',r.name?`✓ ${r.name}`:(currentLang==='pt'?'✓ Válido':'✓ Valid'));
+    else setValState('invalid',currentLang==='pt'?`✗ "${sym.toUpperCase()}" não encontrado — verifique o símbolo`:`✗ "${sym.toUpperCase()}" not found — check symbol`);
   },650);
 }
 
@@ -958,7 +1334,7 @@ function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,
 // ================================================================
 async function runStrategyOptimizer(userResult){
   const btn=$('btn-run-optimizer');
-  if(btn){btn.disabled=true;btn.innerHTML='<div class="spin" style="width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d0f14;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"></div>Optimizing…'}
+  if(btn){btn.disabled=true;btn.innerHTML=`<div class="spin" style="width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d0f14;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"></div>${t('optimizing')}`}
 
   const annualBudgetUSD=parseFloat($('opt-annual-usd')?.value)||6000;
   const stepPct=parseInt($('opt-step')?.value)||10;
@@ -973,7 +1349,7 @@ async function runStrategyOptimizer(userResult){
   }
 
   const optRes=$('optimizer-results');
-  if(optRes) optRes.innerHTML='<div style="color:var(--muted);font-family:\'IBM Plex Mono\',monospace;font-size:11px;padding:8px 0">Running optimization…</div>';
+  if(optRes) optRes.innerHTML=`<div style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 0">${t('running_optimization')}</div>`;
 
   // Yield to browser so spinner shows
   await new Promise(r=>setTimeout(r,30));
@@ -989,7 +1365,7 @@ async function runStrategyOptimizer(userResult){
     if(optRes) optRes.innerHTML=`<div class="ticker-error"><strong>Error:</strong> ${e.message}</div>`;
     console.error(e);
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='⚡ Find Optimal Strategy'}
+    if(btn){btn.disabled=false;btn.textContent=t('btn_find_optimal')}
   }
 }
 
@@ -1014,38 +1390,38 @@ function renderStrategyResults(optResult, sd, ed){
 
   const winnerHtml=`
     <div class="strat-banner">
-      <div class="strat-banner-title">🏆 Optimal DCA Strategy Found</div>
+      <div class="strat-banner-title">${t('opt_optimal_found')}</div>
       <div class="strat-banner-sub">
-        Invest <strong style="color:var(--lime)">${gb.label}</strong> on <strong style="color:var(--lime)">Tuesdays</strong> ·
-        Allocation: <strong style="color:var(--lime)">${syms.map((s,i)=>`${s.split('.')[0]} ${gb.combo[i]}%`).join(' · ')}</strong> ·
-        Lookback window: ${sd} → ${ed}
+        ${t('opt_invest')} <strong style="color:var(--lime)">${gb.label}</strong> ${t('opt_on')} <strong style="color:var(--lime)">${t('opt_tuesdays')}</strong> ·
+        ${t('opt_allocation')}: <strong style="color:var(--lime)">${syms.map((s,i)=>`${s.split('.')[0]} ${gb.combo[i]}%`).join(' · ')}</strong> ·
+        ${t('opt_lookback_window')}: ${sd} → ${ed}
       </div>
     </div>
 
     <div class="strat-winner-row">
       <div class="strat-winner-card gold-card">
-        <div class="strat-gold-badge">Best</div>
-        <div class="strat-card-label">Total Return (${isUSD?'USD':'BRL'})</div>
+        <div class="strat-gold-badge">${t('opt_best')}</div>
+        <div class="strat-card-label">${t('opt_total_return')} (${isUSD?'USD':'BRL'})</div>
         <div class="strat-card-val pos">${fmtPct(gbRet)}</div>
-        <div class="strat-card-sub">${isUSD?fmtUSD(gbFV):fmtBRL(gbFV)} final · ${isUSD?fmtUSD(gbInv):fmtBRL(gbInv)} invested</div>
+        <div class="strat-card-sub">${isUSD?fmtUSD(gbFV):fmtBRL(gbFV)} ${t('opt_final')} · ${isUSD?fmtUSD(gbInv):fmtBRL(gbInv)} ${t('opt_invested')}</div>
       </div>
       ${gb.cagrUSD!=null?`<div class="strat-winner-card gold-card">
-        <div class="strat-card-label">Ann. Return (CAGR)</div>
+        <div class="strat-card-label">${t('opt_ann_return')}</div>
         <div class="strat-card-val pos">${fmtPct(gb.cagrUSD)}</div>
-        <div class="strat-card-sub">Per year · ${fmt(years,1)}yr period</div>
+        <div class="strat-card-sub">${t('opt_per_year')} · ${fmt(years,1)} ${t('opt_period')}</div>
       </div>`:''}
       <div class="strat-winner-card">
-        <div class="strat-card-label">Best Frequency</div>
+        <div class="strat-card-label">${t('opt_best_freq')}</div>
         <div class="strat-card-val" style="color:var(--sky)">${gb.label}</div>
-        <div class="strat-card-sub">Every ${gb.days} days · Tuesdays</div>
+        <div class="strat-card-sub">${t('opt_every')} ${gb.days} days · ${t('opt_tuesdays')}</div>
       </div>
       <div class="strat-winner-card">
-        <div class="strat-card-label">Per-Period Amount</div>
+        <div class="strat-card-label">${t('opt_per_period')}</div>
         <div class="strat-card-val" style="color:var(--violet)">${fmtUSD(Math.round(annualBudgetUSD/(365/gb.days)))}</div>
-        <div class="strat-card-sub">${fmtUSD(annualBudgetUSD)}/yr · ${gb.purchases} purchases</div>
+        <div class="strat-card-sub">${fmtUSD(annualBudgetUSD)}${t('opt_yr')} · ${gb.purchases} ${t('opt_purchases')}</div>
       </div>
       ${!isUSD?`<div class="strat-winner-card">
-        <div class="strat-card-label">Return USD</div>
+        <div class="strat-card-label">${t('opt_return_usd')}</div>
         <div class="strat-card-val ${cls(gb.retUSD)}" style="color:var(--sky)">${fmtPct(gb.retUSD)}</div>
         <div class="strat-card-sub">${fmtUSD(gb.finalValUSD)}</div>
       </div>`:''}
@@ -1063,13 +1439,13 @@ function renderStrategyResults(optResult, sd, ed){
 
   // ---- Top 5 strategies ----
   const top5Html=`
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Top 5 Strategies</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">${t('opt_top5')}</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin-bottom:18px">
       ${(top5||[]).map((r,rank)=>{
         const ret=isUSD?r.retUSD:r.retBRL;
         const fv=isUSD?r.finalValUSD:r.finalValBRL;
         return`<div class="strat-winner-card${rank===0?' gold-card':''}" style="animation-delay:${rank*.05}s">
-          ${rank===0?'<div class="strat-gold-badge">#1 Best</div>':'<div class="strat-gold-badge" style="background:var(--ink3);color:var(--muted2);border:1px solid var(--line)">#'+  (rank+1)+'</div>'}
+          ${rank===0?`<div class="strat-gold-badge">${t('opt_best_badge')}</div>`:'<div class="strat-gold-badge" style="background:var(--ink3);color:var(--muted2);border:1px solid var(--line)">#'+(rank+1)+'</div>'}
           <div class="strat-card-label">${r.freq} · ${syms.map((s,i)=>`${s.split('.')[0]}:${r.combo[i]}%`).join(' ')}</div>
           <div class="strat-card-val ${cls(ret)}" style="${rank===0?'':'font-size:18px'}">${fmtPct(ret)}</div>
           ${r.cagrUSD!=null?`<div class="strat-card-sub" style="color:var(--lime)">CAGR ${fmtPct(r.cagrUSD)}/yr</div>`:''}
@@ -1103,7 +1479,7 @@ function renderStrategyResults(optResult, sd, ed){
 
   const tableHtml=`
     <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600">
-      Return Matrix — All Allocations × Frequencies (${isUSD?'USD':'BRL'} total return %)
+      ${t('opt_return_matrix')} (${isUSD?'USD':'BRL'} ${t('opt_total_return_pct')})
     </div>
     <div class="alloc-table-wrap">
       <table class="alloc-table">
@@ -1141,7 +1517,7 @@ function renderStrategyResults(optResult, sd, ed){
         </tbody>
       </table>
     </div>
-    ${sortedResults.length>60?`<div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:12px">Showing top 60 of ${sortedResults.length} combinations.</div>`:''}
+    ${sortedResults.length>60?`<div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:12px">${t('opt_show_top')(sortedResults.length)}</div>`:''}
   `;
 
   // ---- Best per frequency (bar chart) ----
@@ -1157,14 +1533,14 @@ function renderStrategyResults(optResult, sd, ed){
   el.innerHTML=winnerHtml+top5Html+tableHtml+`
     <div class="chart-card">
       <div class="chart-card-header">
-        <span class="chart-card-title">Best Return by Frequency (${isUSD?'USD':'BRL'}) — Optimal Allocation Each</span>
+        <span class="chart-card-title">${t('opt_best_by_freq')} (${isUSD?'USD':'BRL'}) — ${t('opt_optimal_alloc')}</span>
       </div>
       <div class="chart-wrap" style="height:200px"><canvas id="chart-freq-bar"></canvas></div>
     </div>
     <div id="strat-detail-drawer"></div>
     <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;line-height:1.8">
-      ★ Best overall · Purchases always on Tuesdays · ${stepPct}% weight steps · Budget: ${fmtUSD(annualBudgetUSD)}/yr · ${allRets.length} strategies tested<br>
-      Click any cell in the matrix to see full strategy details · CAGR shown in sub-labels (annualized return)
+      ${t('opt_footer')(stepPct,fmtUSD(annualBudgetUSD),allRets.length)}<br>
+      ${t('opt_click_hint')}
     </div>
   `;
 
@@ -1223,44 +1599,44 @@ function showStratDetail(data){
   drawer.innerHTML=`
     <div class="strat-detail">
       <div class="strat-detail-title">
-        📋 Strategy Detail — ${freq} · ${combo.join('/')} allocation
+        ${t('strat_detail_title')} — ${freq} · ${combo.join('/')} allocation
         <button onclick="this.closest('.strat-detail').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">✕</button>
       </div>
       <div class="strat-detail-grid">
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Frequency</div>
+          <div class="strat-detail-k">${t('strat_frequency')}</div>
           <div class="strat-detail-v" style="color:var(--sky)">${freq}</div>
         </div>
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Return (${isUSD?'USD':'BRL'})</div>
+          <div class="strat-detail-k">${t('strat_return')} (${isUSD?'USD':'BRL'})</div>
           <div class="strat-detail-v ${cls(ret)}">${fmtPct(ret)}</div>
         </div>
         ${r.cagrUSD!=null?`<div class="strat-detail-kv">
-          <div class="strat-detail-k">CAGR (annualized)</div>
+          <div class="strat-detail-k">${t('strat_cagr')}</div>
           <div class="strat-detail-v ${cls(r.cagrUSD)}">${fmtPct(r.cagrUSD)}</div>
         </div>`:''}
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Final Value</div>
+          <div class="strat-detail-k">${t('strat_final_value')}</div>
           <div class="strat-detail-v">${isUSD?fmtUSD(fv):fmtBRL(fv)}</div>
         </div>
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Total Invested</div>
+          <div class="strat-detail-k">${t('strat_total_invested')}</div>
           <div class="strat-detail-v" style="color:var(--violet)">${isUSD?fmtUSD(ti):fmtBRL(ti)}</div>
         </div>
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Gain</div>
+          <div class="strat-detail-k">${t('strat_gain')}</div>
           <div class="strat-detail-v ${cls(fv-ti)}">${isUSD?fmtUSD(fv-ti):fmtBRL(fv-ti)}</div>
         </div>
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Purchases</div>
+          <div class="strat-detail-k">${t('strat_purchases')}</div>
           <div class="strat-detail-v" style="color:var(--muted2)">${r.purchases}</div>
         </div>
         <div class="strat-detail-kv">
-          <div class="strat-detail-k">Per Period</div>
+          <div class="strat-detail-k">${t('strat_per_period')}</div>
           <div class="strat-detail-v" style="color:var(--muted2)">${fmtUSD(perPeriod)}</div>
         </div>
         ${r.retBRL!=null&&isUSD?`<div class="strat-detail-kv">
-          <div class="strat-detail-k">Return BRL</div>
+          <div class="strat-detail-k">${t('opt_return_usd').replace('USD','BRL')}</div>
           <div class="strat-detail-v ${cls(r.retBRL)}" style="color:var(--gold)">${fmtPct(r.retBRL)}</div>
         </div>`:''}
       </div>
@@ -1273,7 +1649,7 @@ function showStratDetail(data){
           </div>`).join('')}
       </div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.7">
-        Invest ${fmtUSD(perPeriod)} every <strong>${days} days</strong> on <strong>Tuesdays</strong>
+        ${t('strat_invest_desc')(fmtUSD(perPeriod),days)}
       </div>
     </div>
   `;
@@ -1391,11 +1767,11 @@ function renderHoldings(){
         </div>
       </div>`;
     }
-    return `<div class="holding" data-idx="${i}" title="Double-click to edit">
+    return `<div class="holding" data-idx="${i}" title="${t('title_dblclick')}">
       <span class="holding-flag">${t.flag}</span>
       <span class="holding-sym">${t.sym}</span>
       ${assetBadge(t)}
-      <span class="holding-edit-hint">dbl-click</span>
+      <span class="holding-edit-hint">${t('dblclick_hint')}</span>
       <span class="holding-wt">${t.wt}%</span>
       <button class="holding-rm" data-idx="${i}">×</button>
     </div>`;
@@ -1425,7 +1801,8 @@ function renderHoldings(){
   });
 
   const wtEl=$('wt-total');
-  wtEl.textContent=`Weights: ${totalWt}% ${totalWt===100?'✓':totalWt>100?'▲ over':'▼ under'}`;
+  const wtStatus=totalWt===100?'ok':totalWt>100?'over':'under';
+  wtEl.textContent=t('wt_label')(totalWt,wtStatus);
   wtEl.className='wt-total '+(totalWt===100?'wt-ok':totalWt>100?'wt-over':'wt-warn');
 }
 
@@ -1449,7 +1826,7 @@ function renderSidebar(){
       document.querySelectorAll('.period-pill').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const d=PERIODS.find(p=>p.label===state.period).days;
-      $('period-desc').textContent=`Invest every ${d} day${d===1?'':'s'}`;
+      $('period-desc').textContent=t('period_desc')(d);
     });
   });
   // Type toggle
@@ -1486,8 +1863,8 @@ function setLoading(tickers){
   showPanel('loading');$('loading-ticker').textContent='FETCHING DATA';
   const items=[
     ...tickers.filter(t=>t.type!=='fi').map(t=>({id:t.sym,label:`${t.flag} ${t.sym}`})),
-    {id:'__fx',label:'💱 USD/BRL exchange rate'},
-    {id:'__calc',label:'⚙ Running DCA engine'},
+    {id:'__fx',label:t('progress_fx')},
+    {id:'__calc',label:t('progress_calc')},
   ];
   state._pi=items;state._pd=new Set();renderProgress();
 }
@@ -1512,50 +1889,50 @@ function renderResults(result){
   const fv=isUSD?finalValUSD:finalValBRL,ti=isUSD?totalInvUSD:totalInvBRL;
   const ret=isUSD?retUSD:retBRL,gain=fv-ti;
 
-  $('panel-title').textContent=state.tickers.map(t=>t.sym).join(' · ');
-  $('panel-sub').textContent=`${$('start-date').value} → ${$('end-date').value} · DCA every ${PERIODS.find(p=>p.label===state.period).days}d · ${totalPurchases} purchases`;
+  $('panel-title').textContent=state.tickers.map(tk=>tk.sym).join(' · ');
+  $('panel-sub').textContent=t('sim_sub')($('start-date').value,$('end-date').value,PERIODS.find(p=>p.label===state.period).days,totalPurchases);
 
   const html=`
     <div class="stats-grid">
       <div class="stat-card c-${ret>=0?'lime':'coral'}">
-        <div class="stat-label">Portfolio Value</div>
+        <div class="stat-label">${t('stat_portfolio_value')}</div>
         <div class="stat-value ${cls(ret)}">${isUSD?fmtUSD(fv):fmtBRL(fv)}</div>
-        <div class="stat-sub">Cost basis: ${isUSD?fmtUSD(ti):fmtBRL(ti)}</div>
+        <div class="stat-sub">${t('stat_cost_basis')}: ${isUSD?fmtUSD(ti):fmtBRL(ti)}</div>
       </div>
       <div class="stat-card c-${ret>=0?'lime':'coral'}">
-        <div class="stat-label">Total Return</div>
+        <div class="stat-label">${t('stat_total_return')}</div>
         <div class="stat-value ${cls(ret)}">${fmtPct(ret)}</div>
-        <div class="stat-sub">Gain: ${isUSD?fmtUSD(gain):fmtBRL(gain)}</div>
+        <div class="stat-sub">${t('stat_gain')}: ${isUSD?fmtUSD(gain):fmtBRL(gain)}</div>
       </div>
       <div class="stat-card c-sky">
-        <div class="stat-label">Return USD</div>
+        <div class="stat-label">${t('stat_return_usd')}</div>
         <div class="stat-value ${cls(retUSD)}" style="color:var(--sky)">${fmtPct(retUSD)}</div>
-        <div class="stat-sub">${fmtUSD(finalValUSD)} · invested ${fmtUSD(totalInvUSD)}</div>
+        <div class="stat-sub">${fmtUSD(finalValUSD)} · ${t('stat_invested')} ${fmtUSD(totalInvUSD)}</div>
       </div>
       <div class="stat-card c-gold">
-        <div class="stat-label">Return BRL</div>
+        <div class="stat-label">${t('stat_return_brl')}</div>
         <div class="stat-value ${cls(retBRL)}" style="color:var(--gold)">${fmtPct(retBRL)}</div>
-        <div class="stat-sub">${fmtBRL(finalValBRL)} · basis ${fmtBRL(totalInvBRL)}</div>
+        <div class="stat-sub">${fmtBRL(finalValBRL)} · ${t('stat_basis')} ${fmtBRL(totalInvBRL)}</div>
       </div>
     </div>
 
     <div class="tabs-bar" id="tabs-bar">
-      <div class="tab active" data-tab="overview">Overview</div>
-      <div class="tab" data-tab="gains">Gains</div>
-      <div class="tab" data-tab="fx">FX · Currency</div>
-      <div class="tab" data-tab="optimizer">⚡ Optimizer</div>
-      <div class="tab" data-tab="signals">Signals</div>
-      <div class="tab" data-tab="table">History</div>
-      <div class="tab" data-tab="breakdown">Breakdown</div>
+      <div class="tab active" data-tab="overview">${t('tab_overview')}</div>
+      <div class="tab" data-tab="gains">${t('tab_gains')}</div>
+      <div class="tab" data-tab="fx">${t('tab_fx')}</div>
+      <div class="tab" data-tab="optimizer">${t('tab_optimizer')}</div>
+      <div class="tab" data-tab="signals">${t('tab_signals')}</div>
+      <div class="tab" data-tab="table">${t('tab_history')}</div>
+      <div class="tab" data-tab="breakdown">${t('tab_breakdown')}</div>
     </div>
 
     <div id="tab-overview">
       <div class="chart-card">
         <div class="chart-card-header">
-          <span class="chart-card-title">Portfolio Value vs Amount Invested</span>
+          <span class="chart-card-title">${t('chart_portfolio_vs_invested')}</span>
           <div class="chart-legend">
-            <span class="legend-item"><span class="legend-dot" style="background:var(--lime)"></span>Value</span>
-            <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>Cost Basis</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--lime)"></span>${t('chart_value')}</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>${t('chart_cost_basis')}</span>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chart-main"></canvas></div>
@@ -1565,7 +1942,7 @@ function renderResults(result){
     <div id="tab-gains" style="display:none">
       <div class="chart-card">
         <div class="chart-card-header">
-          <span class="chart-card-title">Unrealized Gain / Loss (${state.viewCur})</span>
+          <span class="chart-card-title">${t('chart_unrealized_gain')} (${state.viewCur})</span>
         </div>
         <div class="chart-wrap"><canvas id="chart-gains"></canvas></div>
       </div>
@@ -1573,16 +1950,14 @@ function renderResults(result){
 
     <div id="tab-fx" style="display:none">
       <div class="fx-badges">
-        <div class="fx-badge"><div class="fx-badge-label">Current FX</div><div class="fx-badge-value" style="color:var(--gold)">R$ ${fmt(finalFX,4)}</div></div>
-        <div class="fx-badge"><div class="fx-badge-label">FX Change</div><div class="fx-badge-value" style="color:${clr(fxChangePct)}">${fmtPct(fxChangePct)}</div></div>
-        <div class="fx-badge"><div class="fx-badge-label">FX Impact on BRL Return</div><div class="fx-badge-value" style="color:${clr(retBRL-retUSD)}">${fmtPct(retBRL-retUSD)}</div></div>
-        <div class="fx-badge"><div class="fx-badge-label">Start FX</div><div class="fx-badge-value" style="color:var(--muted2)">R$ ${fmt(result.startFX,4)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">${t('fx_current')}</div><div class="fx-badge-value" style="color:var(--gold)">R$ ${fmt(finalFX,4)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">${t('fx_change')}</div><div class="fx-badge-value" style="color:${clr(fxChangePct)}">${fmtPct(fxChangePct)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">${t('fx_impact')}</div><div class="fx-badge-value" style="color:${clr(retBRL-retUSD)}">${fmtPct(retBRL-retUSD)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">${t('fx_start')}</div><div class="fx-badge-value" style="color:var(--muted2)">R$ ${fmt(result.startFX,4)}</div></div>
       </div>
-      <div class="warn-box" style="margin-bottom:12px">
-        ℹ BRL cost basis uses the actual historical FX rate on each purchase date. BRL return = (current USD value × current FX) / (Σ USD invested × FX at purchase date) − 1.
-      </div>
+      <div class="warn-box" style="margin-bottom:12px">${t('fx_note')}</div>
       <div class="chart-card">
-        <div class="chart-card-header"><span class="chart-card-title">USD / BRL Exchange Rate</span></div>
+        <div class="chart-card-header"><span class="chart-card-title">${t('chart_fx_rate')}</span></div>
         <div class="chart-wrap"><canvas id="chart-fx"></canvas></div>
       </div>
     </div>
@@ -1590,32 +1965,32 @@ function renderResults(result){
     <div id="tab-optimizer" style="display:none">
       <div id="optimizer-content">
         <div class="strat-settings">
-          <div class="strat-settings-title">⚡ Strategy Optimizer Settings</div>
+          <div class="strat-settings-title">${t('opt_settings_title')}</div>
           <div class="strat-field-row">
             <div class="field">
-              <label>Annual Budget (USD)</label>
+              <label>${t('opt_annual_budget')}</label>
               <input type="number" id="opt-annual-usd" value="${fmt(totalInvUSD/(((new Date($('end-date').value)-new Date($('start-date').value))/86400000)/365),0).replace(/,/g,'')}" min="100" step="100" placeholder="e.g. 12000">
             </div>
             <div class="field">
-              <label>Lookback Window</label>
+              <label>${t('opt_lookback')}</label>
               <select id="opt-lookback">
-                <option value="same">Same as simulation</option>
-                <option value="1Y">Last 1 Year</option>
-                <option value="3Y">Last 3 Years</option>
-                <option value="5Y">Last 5 Years</option>
-                <option value="10Y">Last 10 Years</option>
+                <option value="same">${t('opt_lookback_same')}</option>
+                <option value="1Y">${t('opt_lookback_1y')}</option>
+                <option value="3Y">${t('opt_lookback_3y')}</option>
+                <option value="5Y">${t('opt_lookback_5y')}</option>
+                <option value="10Y">${t('opt_lookback_10y')}</option>
               </select>
             </div>
             <div class="field">
-              <label>Weight Step Size</label>
+              <label>${t('opt_step')}</label>
               <select id="opt-step">
-                <option value="10">10% steps (faster)</option>
-                <option value="5">5% steps (precise)</option>
+                <option value="10">${t('opt_step_10')}</option>
+                <option value="5">${t('opt_step_5')}</option>
               </select>
             </div>
           </div>
         </div>
-        <button class="btn-run" style="max-width:300px;margin-bottom:18px;font-size:17px;padding:11px" id="btn-run-optimizer">⚡ Find Optimal Strategy</button>
+        <button class="btn-run" style="max-width:300px;margin-bottom:18px;font-size:17px;padding:11px" id="btn-run-optimizer">${t('btn_find_optimal')}</button>
         <div id="optimizer-results"></div>
       </div>
     </div>
@@ -1627,7 +2002,7 @@ function renderResults(result){
     <div id="tab-table" style="display:none">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Value USD</th><th>Value BRL</th><th>Cost Basis USD</th><th>Cost Basis BRL</th><th>Gain USD</th><th>Ret %</th><th>FX</th></tr></thead>
+          <thead><tr><th>${t('th_date')}</th><th>${t('th_value_usd')}</th><th>${t('th_value_brl')}</th><th>${t('th_cost_usd')}</th><th>${t('th_cost_brl')}</th><th>${t('th_gain_usd')}</th><th>${t('th_ret_pct')}</th><th>${t('th_fx')}</th></tr></thead>
           <tbody id="table-body"></tbody>
         </table>
       </div>
@@ -1636,7 +2011,7 @@ function renderResults(result){
     <div id="tab-breakdown" style="display:none">
       <div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line)">
         <table>
-          <thead><tr><th>Asset</th><th>Type</th><th>Weight</th><th>Units</th><th>Cost Basis USD</th><th>Final Value USD</th><th>Return %</th><th>Purchases</th></tr></thead>
+          <thead><tr><th>${t('th_asset')}</th><th>${t('th_type')}</th><th>${t('th_weight')}</th><th>${t('th_units')}</th><th>${t('th_cost_usd')}</th><th>${t('th_final_value')}</th><th>${t('th_return')}</th><th>${t('th_purchases')}</th></tr></thead>
           <tbody id="breakdown-body"></tbody>
         </table>
       </div>
@@ -1722,30 +2097,33 @@ function renderSignals(result){
       const tr=ar.pairs.length>=2?(ar.pairs[ar.pairs.length-1].price/ar.pairs[0].price-1)*100:0;
       return`<div class="signal-card" style="animation-delay:${delay}s">
         <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
-        <div class="signal-row"><span class="signal-row-label">Type</span><span class="signal-row-val" style="color:var(--gold)">Fixed Income</span></div>
-        <div class="signal-row"><span class="signal-row-label">Annual Rate</span><span class="signal-row-val" style="color:var(--gold)">${fmt(rate,2)}% p.a.</span></div>
-        <div class="signal-row"><span class="signal-row-label">Currency</span><span class="signal-row-val">${ar.fiCur==='BRL'?'🇧🇷 BRL':'🇺🇸 USD'}</span></div>
-        <div class="signal-row"><span class="signal-row-label">Period Return</span><span class="signal-row-val ${cls(tr)}">${fmtPct(tr)}</span></div>
-        <div class="signal-row"><span class="signal-row-label">Volatility</span><span class="signal-row-val" style="color:var(--lime)">~0% (synthetic)</span></div>
-        <div class="signal-row" style="border:none"><span class="signal-row-label">DCA Signal</span><span class="signal-row-val"><span class="pill pill-bull">Always Invest</span></span></div>
+        <div class="signal-row"><span class="signal-row-label">${t('sig_type')}</span><span class="signal-row-val" style="color:var(--gold)">${t('sig_fi_type')}</span></div>
+        <div class="signal-row"><span class="signal-row-label">${t('sig_annual_rate')}</span><span class="signal-row-val" style="color:var(--gold)">${fmt(rate,2)}% p.a.</span></div>
+        <div class="signal-row"><span class="signal-row-label">${t('sig_currency')}</span><span class="signal-row-val">${ar.fiCur==='BRL'?'🇧🇷 BRL':'🇺🇸 USD'}</span></div>
+        <div class="signal-row"><span class="signal-row-label">${t('sig_period_return')}</span><span class="signal-row-val ${cls(tr)}">${fmtPct(tr)}</span></div>
+        <div class="signal-row"><span class="signal-row-label">${t('sig_volatility')}</span><span class="signal-row-val" style="color:var(--lime)">${t('sig_synthetic_vol')}</span></div>
+        <div class="signal-row" style="border:none"><span class="signal-row-label">${t('sig_dca_signal')}</span><span class="signal-row-val"><span class="pill pill-bull">${t('sig_always_invest')}</span></span></div>
       </div>`;
     }
     const sig=calcSignals(ar.pairs);
     if(!sig)return`<div class="signal-card" style="animation-delay:${delay}s">
       <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
-      <div style="color:var(--muted);font-size:12px;padding:8px 0">Need 30+ days of data for signals</div>
+      <div style="color:var(--muted);font-size:12px;padding:8px 0">${t('sig_not_enough')}</div>
     </div>`;
+    const trendLbl=sig.trendLabel==='Bullish'?t('sig_bullish'):sig.trendLabel==='Bearish'?t('sig_bearish'):sig.trendLabel;
+    const rsiSignalLbl=sig.rsiSignal==='Overbought'?t('sig_overbought'):sig.rsiSignal==='Oversold'?t('sig_oversold'):t('sig_neutral');
+    const dcaSignalLbl=sig.dcaSignal==='Good Entry'?t('sig_good_entry'):sig.dcaSignal==='Caution'?t('sig_caution'):t('sig_neutral');
     return`<div class="signal-card" style="animation-delay:${delay}s">
       <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
-      <div class="signal-row"><span class="signal-row-label">Last Price</span><span class="signal-row-val">${fmt(sig.last,2)}</span></div>
-      <div class="signal-row"><span class="signal-row-label">SMA 20/50</span><span class="signal-row-val" style="color:var(--muted2)">${fmt(sig.sma20,2)} / ${fmt(sig.sma50,2)}</span></div>
-      <div class="signal-row"><span class="signal-row-label">Trend</span><span class="signal-row-val"><span class="pill ${sig.trendClass}">${sig.trendLabel}</span></span></div>
-      <div class="signal-row"><span class="signal-row-label">RSI (14)</span><span class="signal-row-val" style="color:${sig.rsi>70?'var(--coral)':sig.rsi<30?'var(--lime)':'var(--gold)'}">${fmt(sig.rsi,1)}</span></div>
-      <div class="signal-row"><span class="signal-row-label">RSI Signal</span><span class="signal-row-val"><span class="pill ${sig.rsi>70?'pill-bear':sig.rsi<30?'pill-bull':'pill-neut'}">${sig.rsiSignal}</span></span></div>
-      <div class="signal-row"><span class="signal-row-label">Ann. Vol</span><span class="signal-row-val">${fmt(sig.vol,1)}%</span></div>
-      <div class="signal-row"><span class="signal-row-label">1M / 3M</span><span class="signal-row-val"><span style="color:${clr(sig.ret1m)}">${fmtPct(sig.ret1m)}</span> / <span style="color:${clr(sig.ret3m)}">${fmtPct(sig.ret3m)}</span></span></div>
-      ${sig.ret1y!=null?`<div class="signal-row"><span class="signal-row-label">1Y Return</span><span class="signal-row-val" style="color:${clr(sig.ret1y)}">${fmtPct(sig.ret1y)}</span></div>`:''}
-      <div class="signal-row" style="border:none"><span class="signal-row-label">DCA Signal</span><span class="signal-row-val"><span class="pill ${sig.dcaClass}">${sig.dcaSignal}</span></span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_last_price')}</span><span class="signal-row-val">${fmt(sig.last,2)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_sma')}</span><span class="signal-row-val" style="color:var(--muted2)">${fmt(sig.sma20,2)} / ${fmt(sig.sma50,2)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_trend')}</span><span class="signal-row-val"><span class="pill ${sig.trendClass}">${trendLbl}</span></span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_rsi')}</span><span class="signal-row-val" style="color:${sig.rsi>70?'var(--coral)':sig.rsi<30?'var(--lime)':'var(--gold)'}">${fmt(sig.rsi,1)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_rsi_signal')}</span><span class="signal-row-val"><span class="pill ${sig.rsi>70?'pill-bear':sig.rsi<30?'pill-bull':'pill-neut'}">${rsiSignalLbl}</span></span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_ann_vol')}</span><span class="signal-row-val">${fmt(sig.vol,1)}%</span></div>
+      <div class="signal-row"><span class="signal-row-label">${t('sig_1m_3m')}</span><span class="signal-row-val"><span style="color:${clr(sig.ret1m)}">${fmtPct(sig.ret1m)}</span> / <span style="color:${clr(sig.ret3m)}">${fmtPct(sig.ret3m)}</span></span></div>
+      ${sig.ret1y!=null?`<div class="signal-row"><span class="signal-row-label">${t('sig_1y_return')}</span><span class="signal-row-val" style="color:${clr(sig.ret1y)}">${fmtPct(sig.ret1y)}</span></div>`:''}
+      <div class="signal-row" style="border:none"><span class="signal-row-label">${t('sig_dca_signal')}</span><span class="signal-row-val"><span class="pill ${sig.dcaClass}">${dcaSignalLbl}</span></span></div>
     </div>`;
   }).join('');
 }
@@ -1800,8 +2178,8 @@ function setCurrency(cur){
   const isUSD=cur==='USD';
   const fv=isUSD?finalValUSD:finalValBRL,ti=isUSD?totalInvUSD:totalInvBRL,ret=isUSD?retUSD:retBRL;
   const cards=document.querySelectorAll('.stat-card');
-  if(cards[0]){cards[0].querySelector('.stat-value').textContent=isUSD?fmtUSD(fv):fmtBRL(fv);cards[0].querySelector('.stat-sub').textContent=`Cost basis: ${isUSD?fmtUSD(ti):fmtBRL(ti)}`}
-  if(cards[1]){cards[1].querySelector('.stat-value').textContent=fmtPct(ret);cards[1].querySelector('.stat-sub').textContent=`Gain: ${isUSD?fmtUSD(fv-ti):fmtBRL(fv-ti)}`}
+  if(cards[0]){cards[0].querySelector('.stat-value').textContent=isUSD?fmtUSD(fv):fmtBRL(fv);cards[0].querySelector('.stat-sub').textContent=`${t('stat_cost_basis')}: ${isUSD?fmtUSD(ti):fmtBRL(ti)}`}
+  if(cards[1]){cards[1].querySelector('.stat-value').textContent=fmtPct(ret);cards[1].querySelector('.stat-sub').textContent=`${t('stat_gain')}: ${isUSD?fmtUSD(fv-ti):fmtBRL(fv-ti)}`}
   const at=document.querySelector('#tabs-bar .tab.active')?.dataset.tab;
   if(at==='overview') drawMainChart(state.result);
   if(at==='gains') drawGainChart(state.result);
@@ -1812,16 +2190,16 @@ function setCurrency(cur){
 // ================================================================
 async function runSimulation(){
   const tickers=state.tickers;
-  if(!tickers.length){showError("Add at least one asset.");return}
+  if(!tickers.length){showError(t('err_add_asset'));return}
   const startDate=$('start-date').value,endDate=$('end-date').value;
   const amtUSD=parseFloat($('amt-usd').value)||0,amtBRL=parseFloat($('amt-brl').value)||0;
-  if(!startDate||!endDate){showError("Set start and end dates.");return}
-  if(amtUSD===0&&amtBRL===0){showError("Enter an investment amount.");return}
-  if(new Date(startDate)>=new Date(endDate)){showError("Start date must be before end date.");return}
+  if(!startDate||!endDate){showError(t('err_set_dates'));return}
+  if(amtUSD===0&&amtBRL===0){showError(t('err_set_amount'));return}
+  if(new Date(startDate)>=new Date(endDate)){showError(t('err_date_order'));return}
 
   hideError();setLoading(tickers);
   $('btn-run').disabled=true;
-  $('btn-run').innerHTML='<div class="spin"></div><span>Fetching…</span>';
+  $('btn-run').innerHTML=`<div class="spin"></div><span>${t('loading_fetching')}…</span>`;
 
   const fetchErrors=[];
 
@@ -1832,34 +2210,34 @@ async function runSimulation(){
     const investDates=buildInvestDates(startDate,endDate,periodDays);
 
     const tickerData=[];
-    for(const t of tickers){
-      $('loading-ticker').textContent=`LOADING ${t.sym}`;
+    for(const tk of tickers){
+      $('loading-ticker').textContent=t('loading_ticker')(tk.sym);
       let pairs;
-      if(t.type==='fi'){
-        pairs=generateFIPairs(startDate,endDate,t.fiRate||10);
+      if(tk.type==='fi'){
+        pairs=generateFIPairs(startDate,endDate,tk.fiRate||10);
       } else {
         try{
-          pairs=await fetchYahoo(t.sym,startDate,endDate);
+          pairs=await fetchYahoo(tk.sym,startDate,endDate);
         }catch(e){
-          fetchErrors.push({sym:t.sym,msg:e.message});
+          fetchErrors.push({sym:tk.sym,msg:e.message});
           // Skip this ticker but continue with others
           continue;
         }
       }
-      markProgress(t.sym);
-      tickerData.push({sym:t.sym,flag:t.flag,type:t.type||'equity',fiCur:t.fiCur,pairs});
+      markProgress(tk.sym);
+      tickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
     }
 
     // If all equity tickers failed, abort
-    const equityFailed=tickers.filter(t=>t.type!=='fi').every(t=>fetchErrors.some(e=>e.sym===t.sym));
-    if(equityFailed&&tickers.every(t=>t.type!=='fi')){
+    const equityFailed=tickers.filter(tk=>tk.type!=='fi').every(tk=>fetchErrors.some(e=>e.sym===tk.sym));
+    if(equityFailed&&tickers.every(tk=>tk.type!=='fi')){
       showPanel('empty');
       const errHtml=fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>');
-      showError(`All tickers failed to load:\n${fetchErrors.map(e=>`${e.sym}: ${e.msg}`).join('\n')}`);
+      showError(`${t('err_all_failed')}\n${fetchErrors.map(e=>`${e.sym}: ${e.msg}`).join('\n')}`);
       return;
     }
 
-    $('loading-ticker').textContent='LOADING FX DATA';
+    $('loading-ticker').textContent=t('loading_fx');
     let fxPairs=[];
     try{fxPairs=await fetchYahoo('BRL=X',startDate,endDate)}catch(e){
       try{fxPairs=await fetchYahoo('USDBRL=X',startDate,endDate)}catch(e2){}
@@ -1870,7 +2248,7 @@ async function runSimulation(){
     }
     markProgress('__fx');
 
-    $('loading-ticker').textContent='CALCULATING';
+    $('loading-ticker').textContent=t('loading_calc');
     const result=runDCA({tickerData,fxPairs,investDates,amtUSD,amtBRL,weights});
     markProgress('__calc');
     state.result=result;
@@ -1881,7 +2259,7 @@ async function runSimulation(){
       if(fetchErrors.length){
         const errBox=document.createElement('div');
         errBox.className='ticker-error';
-        errBox.innerHTML=`<strong>⚠ Some tickers could not be fetched and were skipped:</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>')}`;
+        errBox.innerHTML=`<strong>${t('warn_some_failed')}</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>')}`;
         $('panel-results').prepend(errBox);
       }
     },200);
@@ -1892,7 +2270,7 @@ async function runSimulation(){
     console.error(err);
   }finally{
     $('btn-run').disabled=false;
-    $('btn-run').innerHTML='RUN SIMULATION';
+    $('btn-run').textContent=t('btn_run');
   }
 }
 
@@ -1910,7 +2288,7 @@ $('btn-add').addEventListener('click',()=>{
   const flag=$('new-flag').value.split(' ')[0];
   if(!sym)return;
   if($('new-sym').classList.contains('input-invalid')){
-    if(!confirm(`"${sym}" could not be verified on Yahoo Finance.\nAdd it anyway?`))return;
+    if(!confirm(t('confirm_add_unverified')(sym)))return;
   }
   state.tickers.push({sym,wt,flag,type:'equity'});
   state.editingIdx=null;renderHoldings();
@@ -1940,10 +2318,23 @@ document.addEventListener('click',e=>{
 });
 
 // ================================================================
+//  LANG BUTTON WIRING
+// ================================================================
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>setLang(btn.dataset.lang));
+});
+
+// ================================================================
 //  INIT
 // ================================================================
+// Set the correct active lang button on load
+document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
+applyTranslations();
 renderSidebar();
 renderHoldings();
+// Set initial period desc
+const _initPeriod=PERIODS.find(p=>p.label===state.period);
+if(_initPeriod) $('period-desc').textContent=t('period_desc')(_initPeriod.days);
 </script>
 </body>
 </html>
