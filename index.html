@@ -771,6 +771,13 @@ const TRANSLATIONS = {
     ins_no_data: "Insufficient data",
     ins_fi_skip: "Fixed income — no market signals applicable.",
     ins_fetching: sym => `Fetching ${sym}…`,
+    tab_composition: "Composition",
+    chart_composition: "Portfolio Composition Over Time",
+    warn_retry: sym => `⚠ ${sym}: first attempt failed, retrying…`,
+    warn_high_risk: "⚠ High fetch-failure risk: loading many tickers simultaneously. If some fail they will be retried automatically.",
+    warn_skipped: sym => `⚠ ${sym} skipped after retries — excluded from simulation.`,
+    expense_ratio_note: "Returns shown net of estimated fund expense ratios.",
+    opt_allow_zero: "Allow 0% allocations (exclude assets)",
   },
   pt: {
     brand_sub: "EUA · Brasil · Simulador Multicâmbio",
@@ -991,6 +998,13 @@ const TRANSLATIONS = {
     ins_no_data: "Dados insuficientes",
     ins_fi_skip: "Renda fixa — sinais de mercado não aplicáveis.",
     ins_fetching: sym => `Carregando ${sym}…`,
+    tab_composition: "Composição",
+    chart_composition: "Composição do Portfólio ao Longo do Tempo",
+    warn_retry: sym => `⚠ ${sym}: primeira tentativa falhou, tentando novamente…`,
+    warn_high_risk: "⚠ Alto risco de falha: muitos ativos carregando ao mesmo tempo. Se algum falhar, será recarregado automaticamente.",
+    warn_skipped: sym => `⚠ ${sym} ignorado após tentativas — excluído da simulação.`,
+    expense_ratio_note: "Retornos líquidos de taxas estimadas de administração dos fundos.",
+    opt_allow_zero: "Permitir alocação 0% (excluir ativos)",
   }
 };
 
@@ -1120,6 +1134,30 @@ async function fetchYahooCached(sym, startDate, endDate) {
   return pairs;
 }
 
+// Fetch with up to `maxRetries` attempts, exponential backoff (500ms, 1500ms, 3500ms)
+// onRetry(sym) called before each retry so UI can update progress label
+async function fetchYahooWithRetry(sym, startDate, endDate, maxRetries=3, onRetry=null){
+  const key = `${sym}_${startDate}_${endDate}`;
+  if (priceCache[key]) return priceCache[key];
+  let lastErr;
+  for(let attempt=0; attempt<maxRetries; attempt++){
+    try{
+      if(attempt>0){
+        if(onRetry) onRetry(sym, attempt);
+        await new Promise(r=>setTimeout(r, 500 * Math.pow(3, attempt-1)));
+      }
+      const pairs = await fetchYahoo(sym, startDate, endDate);
+      priceCache[key] = pairs;
+      return pairs;
+    }catch(e){
+      lastErr = e;
+      // Don't retry "not found" errors — symbol is wrong
+      if(e.message.includes('not found on Yahoo Finance')||e.message.includes('Check the symbol')) throw e;
+    }
+  }
+  throw lastErr;
+}
+
 async function fetchFXCached(startDate, endDate) {
   const key = `${startDate}_${endDate}`;
   if (fxCache[key]) return fxCache[key];
@@ -1151,6 +1189,42 @@ function lookupPrice(map,date){
   if(map[date]!=null) return map[date];
   for(let i=1;i<=7;i++){const p=datePlusDays(date,-i);if(map[p]!=null)return map[p]}
   return null;
+}
+
+// ================================================================
+//  ETF / FUND EXPENSE RATIOS  (annual %, applied daily as drag)
+//  Source: fund prospectuses. Used to net returns in backtest.
+// ================================================================
+const EXPENSE_RATIOS = {
+  // US ETFs
+  'SPY':0.0945,'IVV':0.03,'VOO':0.03,'VTI':0.03,'QQQ':0.20,
+  'VUG':0.04,'VTV':0.04,'VIG':0.06,'VYM':0.06,'BND':0.03,
+  'AGG':0.03,'TLT':0.15,'GLD':0.40,'SLV':0.50,'IAU':0.25,
+  'EWZ':0.59,'VWO':0.08,'IEMG':0.09,'EFA':0.32,'VEA':0.05,
+  'SCHD':0.06,'JEPI':0.35,'JEPQ':0.35,'QYLD':0.60,
+  'VNQ':0.12,'SCHH':0.07,'O':0, // O is a stock, 0 ER
+  // Brazil ETFs / FIIs (taxa de administração típica)
+  'BOVA11.SA':0.10,'SMAL11.SA':0.30,'IVVB11.SA':0.23,
+  'XPLG11.SA':0.75,'HGLG11.SA':0.60,'KNRI11.SA':0.75,
+  'VISC11.SA':0.75,'MXRF11.SA':1.20,'BCFF11.SA':0.80,
+};
+
+function getExpenseRatio(sym){
+  const upper=(sym||'').toUpperCase().replace('.SA','');
+  return (EXPENSE_RATIOS[sym] ?? EXPENSE_RATIOS[upper] ?? 0) / 100;
+}
+
+// Apply expense ratio drag to a price series (returns new pairs array)
+// daily drag = (1 - annualER)^(1/365)
+function applyExpenseRatio(pairs, annualER){
+  if(!annualER||annualER<=0||!pairs.length) return pairs;
+  const dailyDrag = Math.pow(1 - annualER, 1/365);
+  const base = pairs[0].price;
+  let cumDrag = 1;
+  return pairs.map((p,i)=>{
+    if(i>0) cumDrag *= dailyDrag;
+    return {date:p.date, price:p.price * cumDrag};
+  });
 }
 
 // ================================================================
@@ -1541,20 +1615,23 @@ function fastDCA(priceMaps, fxMap, fiFlags, fiCurs, weights, investDates, amtPer
 }
 
 // Generate all weight combinations for N assets at stepPct increments that sum to 100.
-// E.g. 2 assets, step=10: [10,90],[20,80],...,[90,10]
-function genWeightCombos(n, stepPct){
+// allowZero=true: assets can have 0% (effectively excluded from portfolio)
+// E.g. 2 assets, step=10: [0,100],[10,90],[20,80],...,[100,0]
+function genWeightCombos(n, stepPct, allowZero=false){
   const MAX_COMBOS = 2000;
   const combos=[];
   if(n===1){return[[100]];}
+  const minW = allowZero ? 0 : stepPct;
   function recurse(remaining, current){
     if(combos.length>=MAX_COMBOS) return; // hard stop
     if(current.length===n-1){
       const last=Math.round(remaining);
-      if(last>=stepPct && last%stepPct===0) combos.push([...current,last]);
+      if(last>=minW && last%stepPct===0) combos.push([...current,last]);
       return;
     }
-    const minRemain=stepPct*(n-current.length-1);
-    for(let v=stepPct; v<=remaining-minRemain; v+=stepPct){
+    const slotsLeft=n-current.length-1;
+    const minRemain=minW*slotsLeft;
+    for(let v=minW; v<=remaining-minRemain; v+=stepPct){
       if(combos.length>=MAX_COMBOS) return;
       recurse(remaining-v,[...current,v]);
     }
@@ -1573,7 +1650,7 @@ function fmtWeightsShort(combo){
 }
 
 // Main strategy optimizer — runs synchronously on fetched data
-function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,endDate,stepPct}){
+function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,endDate,stepPct,allowZero=false}){
   const fxMap=buildPriceMap(fxPairs);
   const n=tickerData.length;
   const syms=tickerData.map(tk=>tk.sym);
@@ -1581,7 +1658,7 @@ function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,
   const fiFlags=tickerData.map(tk=>tk.type==='fi');
   const fiCurs=tickerData.map(tk=>tk.fiCur||'USD');
 
-  const combos=genWeightCombos(n,stepPct);
+  const combos=genWeightCombos(n,stepPct,allowZero);
   const results=[]; // {weights, byFreq: [{freq, ...fastDCA result}]}
   let globalBest={retUSD:-Infinity};
   // Collect all individual (combo×freq) results for top-5 ranking
@@ -1634,6 +1711,7 @@ async function runStrategyOptimizer(userResult){
 
   const annualBudgetUSD=parseFloat($('opt-annual-usd')?.value)||6000;
   let stepPct=parseInt($('opt-step')?.value)||10;
+  const allowZero=!!($('opt-allow-zero')?.checked);
   // Auto-switch 5% -> 10% for 4+ assets to prevent browser freeze
   if(stepPct===5 && state.tickers.length>3){
     stepPct=10;
@@ -1660,7 +1738,7 @@ async function runStrategyOptimizer(userResult){
     const optResult=runStrategyOptimizerSync({
       tickerData:userResult.assetResults.map(ar=>({sym:ar.sym,flag:ar.flag,type:ar.type,fiCur:ar.fiCur,pairs:ar.pairs})),
       fxPairs:userResult.fxPairs,
-      annualBudgetUSD,startDate:sd,endDate:ed,stepPct,
+      annualBudgetUSD,startDate:sd,endDate:ed,stepPct,allowZero,
     });
     renderStrategyResults(optResult,sd,ed);
   }catch(e){
@@ -2606,10 +2684,12 @@ function renderResults(result){
         <div class="stat-sub">${fmtBRL(finalValBRL)} · ${t('stat_basis')} ${fmtBRL(totalInvBRL)}</div>
       </div>
     </div>
+    ${result.assetResults.some(ar=>ar.type!=='fi'&&getExpenseRatio(ar.sym)>0)?`<div class="note" style="margin-bottom:10px;font-size:9px">ⓘ ${t('expense_ratio_note')}</div>`:''}
 
     <div class="tabs-bar" id="tabs-bar">
       <div class="tab active" data-tab="overview">${t('tab_overview')}</div>
       <div class="tab" data-tab="gains">${t('tab_gains')}</div>
+      <div class="tab" data-tab="composition">${t('tab_composition')}</div>
       <div class="tab" data-tab="fx">${t('tab_fx')}</div>
       <div class="tab" data-tab="optimizer">${t('tab_optimizer')}</div>
       <div class="tab" data-tab="signals">${t('tab_signals')}</div>
@@ -2638,6 +2718,16 @@ function renderResults(result){
           <span class="chart-card-title">${t('chart_unrealized_gain')} (${state.viewCur})</span>
         </div>
         <div class="chart-wrap"><canvas id="chart-gains"></canvas></div>
+      </div>
+    </div>
+
+    <div id="tab-composition" style="display:none">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">${t('chart_composition')}</span>
+          <div class="chart-legend" id="composition-legend"></div>
+        </div>
+        <div class="chart-wrap" style="height:280px"><canvas id="chart-composition"></canvas></div>
       </div>
     </div>
 
@@ -2681,6 +2771,10 @@ function renderResults(result){
                 <option value="5">${t('opt_step_5')}</option>
               </select>
             </div>
+            <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input type="checkbox" id="opt-allow-zero" style="width:14px;height:14px;accent-color:var(--lime);cursor:pointer">
+              <label for="opt-allow-zero" style="margin:0;cursor:pointer;font-size:10px;color:var(--muted2)">${t('opt_allow_zero')}</label>
+            </div>
           </div>
         </div>
         <button class="btn-run" style="max-width:300px;margin-bottom:18px;font-size:17px;padding:11px" id="btn-run-optimizer">${t('btn_find_optimal')}</button>
@@ -2723,11 +2817,12 @@ function renderResults(result){
     tab.addEventListener('click',()=>{
       document.querySelectorAll('#tabs-bar .tab').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      ['overview','gains','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
+      ['overview','gains','composition','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
         document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
       );
       if(tab.dataset.tab==='overview') drawMainChart(result);
       if(tab.dataset.tab==='gains') drawGainChart(result);
+      if(tab.dataset.tab==='composition') drawCompositionChart(result);
       if(tab.dataset.tab==='fx') drawFXChart(result);
       if(tab.dataset.tab==='signals') renderSignals(result);
       if(tab.dataset.tab==='table') renderTable(result);
@@ -2822,6 +2917,81 @@ function drawFXChart(result){
       return`${sign}R$${fmt(Math.abs(delta),4)} (${sign}${fmt(pct,2)}%)`;
     }
   );
+}
+
+function drawCompositionChart(result){
+  const{timeline,assetResults}=result;
+  const isUSD=state.viewCur==='USD';
+  const canvas=document.getElementById('chart-composition');if(!canvas)return;
+  destroyChart('chart-composition');
+  const ctx=canvas.getContext('2d');
+
+  // Sample timeline to at most 120 points for performance
+  const step=Math.max(1,Math.floor(timeline.length/120));
+  const sampled=timeline.filter((_,i)=>i%step===0||i===timeline.length-1);
+  const labels=sampled.map(d=>d.date);
+
+  // Asset colors palette
+  const PALETTE=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f','#5eead4','#f472b6'];
+
+  // For each asset, compute its share of the portfolio value at each sampled date
+  const datasets=assetResults.map((ar,i)=>{
+    const priceMap=ar.priceMap;
+    const data=sampled.map(pt=>{
+      const fxNow=pt.fx||5.2;
+      const price=lookupPrice(priceMap,pt.date);
+      const pastEvents=ar.events.filter(e=>e.date<=pt.date);
+      const units=pastEvents.reduce((a,e)=>a+e.shares,0);
+      if(!price||!units) return 0;
+      const nativeVal=units*price;
+      const valUSD=(ar.type==='fi'&&ar.fiCur==='BRL')?(nativeVal/fxNow):nativeVal;
+      return isUSD?valUSD:valUSD*fxNow;
+    });
+    const color=PALETTE[i%PALETTE.length];
+    return{
+      label:ar.sym,data,
+      backgroundColor:color+'cc',
+      borderColor:color,
+      borderWidth:1,fill:true,
+      pointRadius:0,tension:.3,
+    };
+  });
+
+  state.charts['chart-composition']=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      ...CD,
+      plugins:{
+        ...CD.plugins,
+        legend:{display:false},
+        tooltip:{
+          ...CD.plugins.tooltip,
+          mode:'index',intersect:false,
+          callbacks:{
+            label:ctx=>{
+              const cur=isUSD?'$':'R$';
+              return` ${ctx.dataset.label}: ${cur}${fmtK(ctx.parsed.y)}`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{...CD.scales.x,stacked:true},
+        y:{...CD.scales.y,stacked:true,
+          ticks:{...CD.scales.y.ticks,callback:v=>isUSD?'$'+fmtK(v):'R$'+fmtK(v)}}
+      }
+    }
+  });
+
+  // Render legend manually
+  const legendEl=$('composition-legend');
+  if(legendEl){
+    legendEl.innerHTML=assetResults.map((ar,i)=>{
+      const color=PALETTE[i%PALETTE.length];
+      return`<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${ar.sym}</span>`;
+    }).join('');
+  }
 }
 
 // ================================================================
@@ -2924,6 +3094,7 @@ function setCurrency(cur){
   const at=document.querySelector('#tabs-bar .tab.active')?.dataset.tab;
   if(at==='overview') drawMainChart(state.result);
   if(at==='gains') drawGainChart(state.result);
+  if(at==='composition') drawCompositionChart(state.result);
 }
 
 // ================================================================
@@ -2945,20 +3116,29 @@ async function runSimulation(){
   const periodDays=PERIODS.find(p=>p.label===state.period).days;
   const investDates=buildInvestDates(startDate,endDate,periodDays);
 
+  // Warn upfront if loading many equity tickers (high CORS failure risk)
+  const equityTickers = tickers.filter(tk=>tk.type!=='fi');
+  if(equityTickers.length >= 4){
+    const warnEl = $('error-msg');
+    if(warnEl){ warnEl.innerHTML=t('warn_high_risk'); warnEl.style.display='block'; warnEl.style.color='var(--gold)'; }
+  }
+
   // Check if all data already cached — skip loading UI and refetch
   const allDataCached = tickers.every(tk =>
     tk.type==='fi' || !!priceCache[`${tk.sym}_${startDate}_${endDate}`]
   ) && !!fxCache[`${startDate}_${endDate}`];
 
   if(allDataCached && state.result){
-    // Rebuild tickerData from cache
+    hideError();
+    // Rebuild tickerData from cache, applying expense ratios
     const cachedTickerData=[];
     for(const tk of tickers){
       let pairs;
       if(tk.type==='fi'){
         pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
       } else {
-        pairs=priceCache[`${tk.sym}_${startDate}_${endDate}`];
+        const raw=priceCache[`${tk.sym}_${startDate}_${endDate}`];
+        pairs=applyExpenseRatio(raw, getExpenseRatio(tk.sym));
       }
       if(pairs) cachedTickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
     }
@@ -2975,14 +3155,15 @@ async function runSimulation(){
     return;
   }
 
+  hideError();
   setLoading(tickers);
   $('btn-run').disabled=true;
   $('btn-run').innerHTML=`<div class="spin"></div><span>${t('loading_fetching')}…</span>`;
 
   const fetchErrors=[];
+  const skipped=[];
 
   try{
-
     const tickerData=[];
     for(const tk of tickers){
       $('loading-ticker').textContent=t('loading_ticker')(tk.sym);
@@ -2991,10 +3172,15 @@ async function runSimulation(){
         pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
       } else {
         try{
-          pairs=await fetchYahooCached(tk.sym,startDate,endDate);
+          // Use retry wrapper — up to 3 attempts with backoff
+          pairs=await fetchYahooWithRetry(tk.sym,startDate,endDate,3,(sym,attempt)=>{
+            $('loading-ticker').textContent=`↺ RETRY ${sym} (${attempt}/2)…`;
+          });
+          // Apply expense ratio drag to raw price series
+          pairs=applyExpenseRatio(pairs, getExpenseRatio(tk.sym));
         }catch(e){
           fetchErrors.push({sym:tk.sym,msg:e.message});
-          // Skip this ticker but continue with others
+          skipped.push(tk.sym);
           continue;
         }
       }
@@ -3003,11 +3189,10 @@ async function runSimulation(){
     }
 
     // If all equity tickers failed, abort
-    const equityFailed=tickers.filter(tk=>tk.type!=='fi').every(tk=>fetchErrors.some(e=>e.sym===tk.sym));
-    if(equityFailed&&tickers.every(tk=>tk.type!=='fi')){
+    const allEquityFailed = equityTickers.length>0 && equityTickers.every(tk=>skipped.includes(tk.sym));
+    if(allEquityFailed && tickers.every(tk=>tk.type!=='fi')){
       showPanel('empty');
-      const errHtml=fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>');
-      showError(`${t('err_all_failed')}\n${fetchErrors.map(e=>`${e.sym}: ${e.msg}`).join('\n')}`);
+      showError(`${t('err_all_failed')}<br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg.split('\n')[0]}`).join('<br>')}`);
       return;
     }
 
@@ -3031,7 +3216,10 @@ async function runSimulation(){
     // Fetch SPY benchmark (if not already in portfolio)
     let benchmarkPairs=null;
     if(!tickers.find(tk=>tk.sym==='SPY')){
-      try{benchmarkPairs=await fetchYahooCached('SPY',startDate,endDate);}catch(e){}
+      try{
+        const raw=await fetchYahooWithRetry('SPY',startDate,endDate,2);
+        benchmarkPairs=applyExpenseRatio(raw,getExpenseRatio('SPY'));
+      }catch(e){}
     } else {
       benchmarkPairs=tickerData.find(td=>td.sym==='SPY')?.pairs||null;
     }
@@ -3049,7 +3237,7 @@ async function runSimulation(){
       if(fetchErrors.length){
         const errBox=document.createElement('div');
         errBox.className='ticker-error';
-        errBox.innerHTML=`<strong>${t('warn_some_failed')}</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>')}`;
+        errBox.innerHTML=`<strong>${t('warn_some_failed')}</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg.split('\n')[0]}`).join('<br>')}`;
         $('panel-results').prepend(errBox);
       }
     },200);
