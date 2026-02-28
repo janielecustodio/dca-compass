@@ -319,6 +319,49 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
 .lang-switcher{display:flex;background:var(--ink3);border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
 .lang-btn{padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted2);transition:all .12s}
 .lang-btn.active{background:var(--violet);color:#fff}
+
+/* ABOUT DCA */
+.about-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:10px 0 6px}
+.about-toggle:hover .about-chevron{color:var(--lime)}
+.about-chevron{font-size:10px;color:var(--muted);transition:transform .2s,color .2s}
+.about-chevron.open{transform:rotate(180deg)}
+.about-body{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-height:0;transition:max-height .35s ease,padding .2s}
+.about-body.open{max-height:700px;padding:13px}
+.about-sec{margin-bottom:11px}
+.about-sec:last-child{margin-bottom:0}
+.about-sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--lime);margin-bottom:5px}
+.about-text{font-size:11px;color:var(--muted2);line-height:1.7}
+.about-text strong{color:var(--head)}
+
+/* MARKET INSIGHTS */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:16px}
+.insight-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:15px;animation:fadeUp .4s ease both;position:relative;overflow:hidden}
+.insight-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.insight-card.zone-oversold::before{background:var(--lime)}
+.insight-card.zone-fair::before{background:var(--gold)}
+.insight-card.zone-overbought::before{background:var(--coral)}
+.insight-ticker-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.insight-ticker-name{font-family:'Bebas Neue',cursive;font-size:20px;color:var(--head)}
+.zone-badge{padding:3px 9px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600}
+.zone-badge.oversold{background:rgba(184,255,87,.15);color:var(--lime)}
+.zone-badge.fair{background:rgba(245,200,66,.15);color:var(--gold)}
+.zone-badge.overbought{background:rgba(255,95,95,.15);color:var(--coral)}
+.ins-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px}
+.ins-row:last-child{border-bottom:none}
+.ins-label{color:var(--muted2);font-size:10px}
+.ins-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500}
+.ins-divider{font-family:'IBM Plex Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:6px 0 2px;margin-top:4px;border-bottom:1px solid var(--line)}
+.bb-wrap{margin:6px 0 8px}
+.bb-track{height:6px;background:var(--line);border-radius:3px;position:relative;margin:4px 0}
+.bb-fill{position:absolute;top:0;height:6px;background:rgba(77,184,255,.3);border-radius:3px}
+.bb-cursor{position:absolute;top:-4px;width:3px;height:14px;background:var(--lime);border-radius:2px;transform:translateX(-50%)}
+.bb-lbls{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted)}
+.ins-banner{border-radius:var(--r);padding:6px 9px;margin-bottom:8px;font-size:10px;font-family:'IBM Plex Mono',monospace;line-height:1.5}
+.ins-banner.low{background:rgba(184,255,87,.07);border:1px solid rgba(184,255,87,.2);color:var(--lime)}
+.ins-banner.high{background:rgba(255,95,95,.07);border:1px solid rgba(255,95,95,.2);color:var(--coral)}
+.ins-score-row{display:flex;align-items:center;gap:6px;padding-top:8px;flex-wrap:wrap}
+.ins-loading{display:flex;align-items:center;gap:10px;padding:30px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+.ins-fi-note{color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:8px 0;font-style:italic}
 </style>
 </head>
 <body>
@@ -414,6 +457,15 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
       </div>
       <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:2px" data-i18n="amt_note">Both currencies accepted. BRL uses historical FX rate at time of each purchase.</div>
 
+    </div>
+
+    <!-- ABOUT DCA -->
+    <div style="padding:0 18px 16px;border-top:1px solid var(--line)">
+      <div class="about-toggle" id="about-toggle">
+        <span class="section-label" style="margin:0" data-i18n="about_label">About DCA</span>
+        <span class="about-chevron" id="about-chevron">▼</span>
+      </div>
+      <div class="about-body" id="about-body"><div id="about-content"></div></div>
     </div>
 
     <div class="sidebar-footer">
@@ -627,6 +679,57 @@ const TRANSLATIONS = {
     loading_calc: "CALCULATING",
     progress_fx: "💱 USD/BRL exchange rate",
     progress_calc: "⚙ Running DCA engine",
+    about_label: "About DCA",
+    about_what_title: "What is Dollar Cost Averaging?",
+    about_what_text: "DCA means investing a <strong>fixed amount at regular intervals</strong> — weekly, monthly or quarterly — regardless of price. You automatically buy more units when prices are low and fewer when prices are high, smoothing your average cost over time.",
+    about_why_title: "Why DCA for Long-Term Investing?",
+    about_why_text: "<strong>No timing needed</strong> — removes the pressure to predict market peaks or bottoms.<br><strong>Reduces emotional bias</strong> — disciplined, automatic investing.<br><strong>Compound growth</strong> — returns reinvested over decades grow exponentially.<br><strong>Buy & hold focus</strong> — this tool is built around accumulation only, not selling.",
+    about_how_title: "How to Use This Tool",
+    about_how_text: "① Add assets (ETFs, stocks, or fixed income) and set portfolio weights.<br>② Choose your investment frequency and amounts in USD and/or BRL.<br>③ Run the simulation to see historical returns, FX impact, and per-asset breakdown.<br>④ Use the <strong>Optimizer</strong> to find the best historical frequency/allocation.<br>⑤ Use <strong>Market Insights</strong> to check technical readings before each rebalancing.",
+    about_rebalance_title: "Rebalancing Approach",
+    about_rebalance_text: "This tool does not model selling. Instead, use the <strong>Market Insights</strong> tab every 6 months to see which assets are trading at historical discounts — then allocate more of your periodic investment toward them.",
+    tab_insights: "Market Insights",
+    ins_loading: "Fetching market data…",
+    ins_zone_oversold: "Oversold",
+    ins_zone_fair: "Fair Value",
+    ins_zone_overbought: "Overbought",
+    ins_last: "Last Price",
+    ins_52w_hi: "52W High",
+    ins_52w_lo: "52W Low",
+    ins_52w_pos: "52W Position",
+    ins_sma20: "SMA 20",
+    ins_sma50: "SMA 50",
+    ins_sma200: "SMA 200",
+    ins_rsi: "RSI (14)",
+    ins_macd_line: "MACD Line",
+    ins_macd_sig: "MACD Signal",
+    ins_macd_hist: "MACD Histogram",
+    ins_macd_trend: "MACD Trend",
+    ins_bb_pos: "Price in BB (%B)",
+    ins_bb_width: "BB Width %",
+    ins_vol: "Ann. Volatility",
+    ins_ret_1m: "1M Return",
+    ins_ret_3m: "3M Return",
+    ins_ret_6m: "6M Return",
+    ins_ret_1y: "1Y Return",
+    ins_trend: "MA Trend",
+    ins_above: "Above",
+    ins_below: "Below",
+    ins_bull_cross: "Bullish cross",
+    ins_bear_cross: "Bearish cross",
+    ins_macd_neut: "Neutral",
+    ins_signals: (b,tot) => `${b}/${tot} bullish signals`,
+    ins_near_low: sym => `${sym} near 52W low — possible accumulation zone`,
+    ins_near_high: sym => `${sym} near 52W high — elevated valuation`,
+    ins_section_price: "Price & Range",
+    ins_section_ma: "Moving Averages",
+    ins_section_momentum: "Momentum",
+    ins_section_bb: "Bollinger Bands (20,2σ)",
+    ins_section_returns: "Historical Returns",
+    ins_disclaimer: "Historical data only. Not financial advice.",
+    ins_no_data: "Insufficient data",
+    ins_fi_skip: "Fixed income — no market signals applicable.",
+    ins_fetching: sym => `Fetching ${sym}…`,
   },
   pt: {
     brand_sub: "EUA · Brasil · Simulador Multicâmbio",
@@ -792,13 +895,75 @@ const TRANSLATIONS = {
     loading_calc: "CALCULANDO",
     progress_fx: "💱 Taxa USD/BRL",
     progress_calc: "⚙ Executando motor DCA",
+    about_label: "Sobre o DCA",
+    about_what_title: "O que é Dollar Cost Averaging?",
+    about_what_text: "DCA significa investir um <strong>valor fixo em intervalos regulares</strong> — semanal, mensal ou trimestral — independente do preço. Você compra automaticamente mais cotas quando os preços estão baixos e menos quando estão altos, suavizando seu preço médio ao longo do tempo.",
+    about_why_title: "Por que usar DCA no Investimento de Longo Prazo?",
+    about_why_text: "<strong>Sem necessidade de timing</strong> — elimina a pressão de prever topos ou fundos do mercado.<br><strong>Reduz viés emocional</strong> — investimento disciplinado e automático.<br><strong>Crescimento composto</strong> — retornos reinvestidos por décadas crescem exponencialmente.<br><strong>Foco em acumulação</strong> — esta ferramenta é construída apenas para acumulação, sem vendas.",
+    about_how_title: "Como Usar Esta Ferramenta",
+    about_how_text: "① Adicione ativos (ETFs, ações ou renda fixa) e defina os pesos do portfólio.<br>② Escolha a frequência e os valores de aporte em USD e/ou BRL.<br>③ Execute a simulação para ver retornos históricos, impacto cambial e detalhamento por ativo.<br>④ Use o <strong>Otimizador</strong> para encontrar a melhor frequência/alocação histórica.<br>⑤ Use <strong>Insights de Mercado</strong> para verificar leituras técnicas antes de cada rebalanceamento.",
+    about_rebalance_title: "Abordagem de Rebalanceamento",
+    about_rebalance_text: "Esta ferramenta não modela vendas. Em vez disso, use a aba <strong>Insights de Mercado</strong> a cada 6 meses para ver quais ativos estão sendo negociados com desconto histórico — então aloque mais do seu aporte periódico neles.",
+    tab_insights: "Insights de Mercado",
+    ins_loading: "Buscando dados de mercado…",
+    ins_zone_oversold: "Sobrevendido",
+    ins_zone_fair: "Valor Justo",
+    ins_zone_overbought: "Sobrecomprado",
+    ins_last: "Último Preço",
+    ins_52w_hi: "Máx 52 Semanas",
+    ins_52w_lo: "Mín 52 Semanas",
+    ins_52w_pos: "Posição 52S",
+    ins_sma20: "MMA 20",
+    ins_sma50: "MMA 50",
+    ins_sma200: "MMA 200",
+    ins_rsi: "RSI (14)",
+    ins_macd_line: "Linha MACD",
+    ins_macd_sig: "Sinal MACD",
+    ins_macd_hist: "Histograma MACD",
+    ins_macd_trend: "Tendência MACD",
+    ins_bb_pos: "Preço no BB (%B)",
+    ins_bb_width: "Largura BB %",
+    ins_vol: "Vol. Anualizada",
+    ins_ret_1m: "Retorno 1M",
+    ins_ret_3m: "Retorno 3M",
+    ins_ret_6m: "Retorno 6M",
+    ins_ret_1y: "Retorno 1A",
+    ins_trend: "Tendência MMA",
+    ins_above: "Acima",
+    ins_below: "Abaixo",
+    ins_bull_cross: "Cruzamento de alta",
+    ins_bear_cross: "Cruzamento de baixa",
+    ins_macd_neut: "Neutro",
+    ins_signals: (b,tot) => `${b}/${tot} sinais de alta`,
+    ins_near_low: sym => `${sym} próximo à mínima de 52S — possível zona de acumulação`,
+    ins_near_high: sym => `${sym} próximo à máxima de 52S — valorização elevada`,
+    ins_section_price: "Preço & Faixa",
+    ins_section_ma: "Médias Móveis",
+    ins_section_momentum: "Momentum",
+    ins_section_bb: "Bandas de Bollinger (20,2σ)",
+    ins_section_returns: "Retornos Históricos",
+    ins_disclaimer: "Apenas dados históricos. Não é conselho financeiro.",
+    ins_no_data: "Dados insuficientes",
+    ins_fi_skip: "Renda fixa — sinais de mercado não aplicáveis.",
+    ins_fetching: sym => `Carregando ${sym}…`,
   }
 };
 
 // ================================================================
 //  I18N ENGINE
 // ================================================================
-let currentLang = localStorage.getItem('dca_lang') || 'en';
+function detectLanguage() {
+  const stored = localStorage.getItem('dca_lang');
+  if (stored === 'en' || stored === 'pt') return stored;
+  const navLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+  if (navLang.startsWith('pt')) return 'pt';
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (/America\/(Sao_Paulo|Manaus|Belem|Fortaleza|Recife|Maceio|Cuiaba|Porto_Velho|Boa_Vista|Noronha|Araguaina|Bahia|Campo_Grande|Rio_Branco)|Europe\/Lisbon/.test(tz)) return 'pt';
+  } catch(e) {}
+  return 'en';
+}
+let currentLang = detectLanguage();
 
 function t(key) {
   const val = TRANSLATIONS[currentLang][key] || TRANSLATIONS['en'][key];
@@ -826,12 +991,25 @@ function setLang(lang) {
   applyTranslations();
   // Re-render dynamic parts that depend on language
   renderHoldings();
+  if(document.getElementById('about-body')?.classList.contains('open'))renderAboutDCA();
+  const _ig=document.getElementById('insights-grid');
+  if(_ig){delete _ig.dataset.rendered;}
   // Update period desc
   const d = PERIODS.find(p => p.label === state.period)?.days;
   if (d) $('period-desc').textContent = t('period_desc')(d);
   // Update btn-run text (unless loading)
   const btn = $('btn-run');
   if (btn && !btn.disabled) btn.textContent = t('btn_run');
+}
+
+function renderAboutDCA(){
+  const el=document.getElementById('about-content');
+  if(!el)return;
+  el.innerHTML=`
+    <div class="about-sec"><div class="about-sec-title">${t('about_what_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_what_text}</div></div>
+    <div class="about-sec"><div class="about-sec-title">${t('about_why_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_why_text}</div></div>
+    <div class="about-sec"><div class="about-sec-title">${t('about_how_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_how_text}</div></div>
+    <div class="about-sec"><div class="about-sec-title">${t('about_rebalance_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_rebalance_text}</div></div>`;
 }
 
 // ================================================================
@@ -1689,6 +1867,219 @@ function calcSignals(pairs){
 }
 
 // ================================================================
+//  MARKET INSIGHTS — Extended TA (MACD, BB, SMA200, 52W, zone)
+// ================================================================
+const insightsCache={};
+
+function calcInsights(pairs){
+  if(!pairs||pairs.length<30)return null;
+  const vals=pairs.map(p=>p.price);
+  const n=vals.length;
+  const smaOf=(k)=>n<k?null:vals.slice(-k).reduce((a,b)=>a+b,0)/k;
+  const last=vals[n-1];
+
+  // SMAs
+  const sma20=smaOf(20),sma50=smaOf(Math.min(50,n)),sma200=smaOf(Math.min(200,n));
+
+  // RSI (14)
+  const pd=Math.min(14,n-1);let g=0,lo=0;
+  for(let i=n-pd;i<n;i++){const d=vals[i]-vals[i-1];if(d>0)g+=d;else lo+=Math.abs(d)}
+  const rsi=100-(100/(1+(g/pd)/((lo/pd)||0.0001)));
+
+  // EMA helper
+  function ema(arr,k){
+    if(arr.length<k)return null;
+    const m=2/(k+1);
+    let e=arr.slice(0,k).reduce((a,b)=>a+b,0)/k;
+    for(let i=k;i<arr.length;i++)e=arr[i]*m+e*(1-m);
+    return e;
+  }
+
+  // MACD(12,26,9) — build rolling macd array for signal line
+  let macdLine=null,macdSig=null,macdHist=null;
+  if(n>=35){
+    const macdArr=[];
+    for(let i=26;i<=n;i++){
+      const e12=ema(vals.slice(0,i),12),e26=ema(vals.slice(0,i),26);
+      if(e12!=null&&e26!=null)macdArr.push(e12-e26);
+    }
+    if(macdArr.length>=9){
+      macdLine=macdArr[macdArr.length-1];
+      macdSig=ema(macdArr,9);
+      macdHist=macdLine-macdSig;
+    }
+  }
+
+  // Bollinger Bands (20,2σ)
+  let bbU=null,bbL=null,bbW=null,bbPct=null;
+  if(n>=20){
+    const sl=vals.slice(-20);
+    const mean=sl.reduce((a,b)=>a+b,0)/20;
+    const std=Math.sqrt(sl.reduce((a,v)=>a+(v-mean)**2,0)/20);
+    bbU=mean+2*std; bbL=mean-2*std;
+    bbW=((bbU-bbL)/mean)*100;
+    bbPct=(bbU-bbL)>0?((last-bbL)/(bbU-bbL))*100:50;
+  }
+
+  // 52W high/low
+  const w52=vals.slice(-Math.min(252,n));
+  const hi52=Math.max(...w52),lo52=Math.min(...w52);
+  const pos52=hi52>lo52?((last-lo52)/(hi52-lo52))*100:50;
+
+  // Annualised volatility
+  const ww=Math.min(21,n);
+  const rets=vals.slice(-ww).slice(1).map((v,i)=>Math.log(v/vals[n-ww+i]));
+  const rm=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const vol=Math.sqrt(rets.reduce((a,r)=>a+(r-rm)**2,0)/((rets.length-1)||1)*252)*100;
+
+  // Returns
+  const ret1m=n>=22?(last/vals[n-22]-1)*100:null;
+  const ret3m=n>=66?(last/vals[n-66]-1)*100:null;
+  const ret6m=n>=126?(last/vals[n-126]-1)*100:null;
+  const ret1y=n>=252?(last/vals[n-252]-1)*100:null;
+
+  // Composite zone scoring
+  let bull=0,tot=0;
+  const vote=(cond,neg)=>{tot++;if(cond)bull++;else if(neg)bull--;};
+  vote(rsi<35,rsi>65);
+  if(sma20!=null)vote(last<sma20*0.97,last>sma20*1.03);
+  if(sma50!=null)vote(last<sma50*0.95,last>sma50*1.05);
+  if(sma200!=null)vote(last<sma200*0.93,last>sma200*1.07);
+  vote(pos52<25,pos52>75);
+  if(bbPct!=null)vote(bbPct<15,bbPct>85);
+  if(macdHist!=null)vote(macdHist>0,macdHist<0);
+
+  const ratio=tot>0?bull/tot:0;
+  const zone=ratio>=0.25?'oversold':ratio<=-0.25?'overbought':'fair';
+  const nearLow=pos52<30&&(sma50==null||last<sma50);
+  const nearHigh=pos52>75&&(sma50==null||last>sma50);
+  const trendBull=sma20&&sma50?sma20>sma50:null;
+
+  return{last,sma20,sma50,sma200,rsi,macdLine,macdSig,macdHist,bbU,bbL,bbW,bbPct,
+    hi52,lo52,pos52,vol,ret1m,ret3m,ret6m,ret1y,zone,bull,tot,nearLow,nearHigh,trendBull};
+}
+
+async function fetchInsightsFor(sym,flag,existingPairs){
+  const cached=insightsCache[sym];
+  if(cached&&(Date.now()-cached.ts)<1800000)return cached.ins;
+  // Use already-fetched simulation data first (zero extra requests)
+  if(existingPairs&&existingPairs.length>=50){
+    const ins=calcInsights(existingPairs);
+    insightsCache[sym]={ins,ts:Date.now()};
+    return ins;
+  }
+  // Fetch 1 year of data fresh
+  const ed=new Date().toISOString().slice(0,10);
+  const sd=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
+  try{
+    const pairs=await fetchYahoo(sym,sd,ed);
+    const ins=calcInsights(pairs);
+    insightsCache[sym]={ins,ts:Date.now()};
+    return ins;
+  }catch(e){return null;}
+}
+
+async function renderInsights(result){
+  const grid=document.getElementById('insights-grid');
+  if(!grid||grid.dataset.rendered==='1')return;
+  grid.dataset.rendered='1';
+
+  grid.innerHTML=`<div class="ins-loading" style="grid-column:1/-1"><div class="spin" style="width:13px;height:13px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--lime);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>${t('ins_loading')}</div>`;
+
+  // Separate equity vs FI
+  const equityAssets=result.assetResults.filter(ar=>ar.type!=='fi');
+  const fiAssets=result.assetResults.filter(ar=>ar.type==='fi');
+
+  // Render a placeholder per card so they appear progressively
+  const placeholders=equityAssets.map(ar=>`<div class="insight-card zone-fair" id="ins-card-${ar.sym.replace(/[^a-z0-9]/gi,'_')}"><div class="ins-loading"><div class="spin" style="width:11px;height:11px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--lime);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>${t('ins_fetching')(ar.sym)}</div></div>`).join('');
+  const fiHtml=fiAssets.map(ar=>`<div class="insight-card zone-fair"><div class="insight-ticker-row"><span class="insight-ticker-name">${ar.flag} ${ar.sym}</span></div><div class="ins-fi-note">${t('ins_fi_skip')}</div></div>`).join('');
+
+  grid.innerHTML=placeholders+fiHtml;
+
+  // Fetch & render each card in parallel
+  await Promise.all(equityAssets.map(async ar=>{
+    const ins=await fetchInsightsFor(ar.sym,ar.flag,ar.pairs);
+    const cardId='ins-card-'+ar.sym.replace(/[^a-z0-9]/gi,'_');
+    const card=document.getElementById(cardId);
+    if(!card)return;
+
+    if(!ins){
+      card.innerHTML=`<div class="insight-ticker-row"><span class="insight-ticker-name">${ar.flag} ${ar.sym}</span></div><div style="color:var(--muted);font-size:11px">${t('ins_no_data')}</div>`;
+      return;
+    }
+
+    const zoneLbl=ins.zone==='oversold'?t('ins_zone_oversold'):ins.zone==='overbought'?t('ins_zone_overbought'):t('ins_zone_fair');
+    card.className=`insight-card zone-${ins.zone}`;
+
+    // Banner
+    const banner=ins.nearLow?`<div class="ins-banner low">↓ ${t('ins_near_low')(ar.sym)}</div>`
+      :ins.nearHigh?`<div class="ins-banner high">↑ ${t('ins_near_high')(ar.sym)}</div>`:'';
+
+    // Bollinger bar
+    const bbBar=ins.bbPct!=null?`
+      <div class="bb-wrap">
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:3px">${t('ins_section_bb')}</div>
+        <div class="bb-track">
+          <div class="bb-fill" style="left:0;width:100%"></div>
+          <div class="bb-cursor" style="left:${Math.max(2,Math.min(98,ins.bbPct))}%"></div>
+        </div>
+        <div class="bb-lbls"><span>${fmt(ins.bbL,2)}</span><span style="color:var(--lime)">${fmt(ins.last,2)}</span><span>${fmt(ins.bbU,2)}</span></div>
+      </div>`:'';
+
+    // MACD trend label
+    const macdTrend=ins.macdLine!=null&&ins.macdSig!=null
+      ?(ins.macdLine>ins.macdSig?t('ins_bull_cross'):t('ins_bear_cross'))
+      :t('ins_macd_neut');
+    const macdColor=ins.macdLine!=null&&ins.macdSig!=null
+      ?(ins.macdLine>ins.macdSig?'var(--lime)':'var(--coral)'):'var(--muted2)';
+
+    // MA trend
+    const trendLbl=ins.trendBull===null?'—':ins.trendBull?`▲ ${t('ins_above')} SMA20>50`:`▼ ${t('ins_below')} SMA20<50`;
+    const trendCol=ins.trendBull===null?'var(--muted)':ins.trendBull?'var(--lime)':'var(--coral)';
+
+    // Helper for colored value
+    const cv=(v,lo,hi,fmt_)=>v==null?'—':`<span style="color:${v<lo?'var(--lime)':v>hi?'var(--coral)':'var(--gold)'}">${fmt_||fmt(v,2)}</span>`;
+
+    card.innerHTML=`
+      <div class="insight-ticker-row">
+        <span class="insight-ticker-name">${ar.flag} ${ar.sym}</span>
+        <span class="zone-badge ${ins.zone}">${zoneLbl}</span>
+      </div>
+      ${banner}${bbBar}
+      <div class="ins-divider">${t('ins_section_price')}</div>
+      <div class="ins-row"><span class="ins-label">${t('ins_last')}</span><span class="ins-val">${fmt(ins.last,2)}</span></div>
+      <div class="ins-row"><span class="ins-label">${t('ins_52w_lo')} / ${t('ins_52w_hi')}</span><span class="ins-val" style="color:var(--muted2)">${fmt(ins.lo52,2)} / ${fmt(ins.hi52,2)}</span></div>
+      <div class="ins-row"><span class="ins-label">${t('ins_52w_pos')}</span><span class="ins-val">${cv(ins.pos52,25,75,fmt(ins.pos52,1)+'%')}</span></div>
+      <div class="ins-divider">${t('ins_section_ma')}</div>
+      ${ins.sma20!=null?`<div class="ins-row"><span class="ins-label">${t('ins_sma20')}</span><span class="ins-val" style="color:${ins.last>=ins.sma20?'var(--lime)':'var(--coral)'}">${fmt(ins.sma20,2)}</span></div>`:''}
+      ${ins.sma50!=null?`<div class="ins-row"><span class="ins-label">${t('ins_sma50')}</span><span class="ins-val" style="color:${ins.last>=ins.sma50?'var(--lime)':'var(--coral)'}">${fmt(ins.sma50,2)}</span></div>`:''}
+      ${ins.sma200!=null?`<div class="ins-row"><span class="ins-label">${t('ins_sma200')}</span><span class="ins-val" style="color:${ins.last>=ins.sma200?'var(--lime)':'var(--coral)'}">${fmt(ins.sma200,2)}</span></div>`:''}
+      <div class="ins-row"><span class="ins-label">${t('ins_trend')}</span><span class="ins-val" style="color:${trendCol}">${trendLbl}</span></div>
+      <div class="ins-divider">${t('ins_section_momentum')}</div>
+      <div class="ins-row"><span class="ins-label">${t('ins_rsi')}</span><span class="ins-val">${cv(ins.rsi,30,70,fmt(ins.rsi,1))}</span></div>
+      ${ins.macdLine!=null?`<div class="ins-row"><span class="ins-label">${t('ins_macd_trend')}</span><span class="ins-val" style="color:${macdColor}">${macdTrend}</span></div>`:''}
+      ${ins.macdHist!=null?`<div class="ins-row"><span class="ins-label">${t('ins_macd_hist')}</span><span class="ins-val" style="color:${ins.macdHist>0?'var(--lime)':'var(--coral)'}">${fmt(ins.macdHist,4)}</span></div>`:''}
+      ${ins.bbPct!=null?`<div class="ins-row"><span class="ins-label">${t('ins_bb_pos')}</span><span class="ins-val">${cv(ins.bbPct,15,85,fmt(ins.bbPct,1)+'%')}</span></div>`:''}
+      ${ins.bbW!=null?`<div class="ins-row"><span class="ins-label">${t('ins_bb_width')}</span><span class="ins-val" style="color:var(--muted2)">${fmt(ins.bbW,1)}%</span></div>`:''}
+      <div class="ins-row"><span class="ins-label">${t('ins_vol')}</span><span class="ins-val">${fmt(ins.vol,1)}%</span></div>
+      <div class="ins-divider">${t('ins_section_returns')}</div>
+      ${ins.ret1m!=null?`<div class="ins-row"><span class="ins-label">${t('ins_ret_1m')}</span><span class="ins-val ${ins.ret1m>=0?'td-pos':'td-neg'}">${fmtPct(ins.ret1m)}</span></div>`:''}
+      ${ins.ret3m!=null?`<div class="ins-row"><span class="ins-label">${t('ins_ret_3m')}</span><span class="ins-val ${ins.ret3m>=0?'td-pos':'td-neg'}">${fmtPct(ins.ret3m)}</span></div>`:''}
+      ${ins.ret6m!=null?`<div class="ins-row"><span class="ins-label">${t('ins_ret_6m')}</span><span class="ins-val ${ins.ret6m>=0?'td-pos':'td-neg'}">${fmtPct(ins.ret6m)}</span></div>`:''}
+      ${ins.ret1y!=null?`<div class="ins-row"><span class="ins-label">${t('ins_ret_1y')}</span><span class="ins-val ${ins.ret1y>=0?'td-pos':'td-neg'}">${fmtPct(ins.ret1y)}</span></div>`:''}
+      <div class="ins-score-row">
+        <span class="pill ${ins.zone==='oversold'?'pill-bull':ins.zone==='overbought'?'pill-bear':'pill-neut'}">${t('ins_signals')(Math.max(0,ins.bull),ins.tot)}</span>
+      </div>`;
+  }));
+
+  // Disclaimer footer
+  const disc=document.createElement('div');
+  disc.style.cssText='grid-column:1/-1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--muted);margin-top:4px;padding-top:10px;border-top:1px solid var(--line)';
+  disc.textContent='ℹ '+t('ins_disclaimer');
+  grid.appendChild(disc);
+}
+
+// ================================================================
 //  CHART HELPERS
 // ================================================================
 function destroyChart(k){if(state.charts[k]){state.charts[k].destroy();delete state.charts[k]}}
@@ -1924,6 +2315,7 @@ function renderResults(result){
       <div class="tab" data-tab="signals">${t('tab_signals')}</div>
       <div class="tab" data-tab="table">${t('tab_history')}</div>
       <div class="tab" data-tab="breakdown">${t('tab_breakdown')}</div>
+      <div class="tab" data-tab="insights">${t('tab_insights')}</div>
     </div>
 
     <div id="tab-overview">
@@ -2016,6 +2408,10 @@ function renderResults(result){
         </table>
       </div>
     </div>
+
+    <div id="tab-insights" style="display:none">
+      <div class="insights-grid" id="insights-grid"></div>
+    </div>
   `;
 
   $('panel-results').innerHTML=html;showPanel('results');
@@ -2025,7 +2421,7 @@ function renderResults(result){
     tab.addEventListener('click',()=>{
       document.querySelectorAll('#tabs-bar .tab').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      ['overview','gains','fx','optimizer','signals','table','breakdown'].forEach(n=>
+      ['overview','gains','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
         document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
       );
       if(tab.dataset.tab==='overview') drawMainChart(result);
@@ -2039,6 +2435,7 @@ function renderResults(result){
         const b=$('btn-run-optimizer');
         if(b&&!b._wired){b._wired=true;b.addEventListener('click',()=>runStrategyOptimizer(result));}
       }
+      if(tab.dataset.tab==='insights') renderInsights(result);
     });
   });
 
@@ -2332,6 +2729,11 @@ document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.
 applyTranslations();
 renderSidebar();
 renderHoldings();
+const _aToggle=document.getElementById('about-toggle');
+const _aBody=document.getElementById('about-body');
+const _aChev=document.getElementById('about-chevron');
+if(_aToggle){_aToggle.addEventListener('click',()=>{const o=_aBody.classList.toggle('open');_aChev.classList.toggle('open',o);if(o)renderAboutDCA();})}
+
 // Set initial period desc
 const _initPeriod=PERIODS.find(p=>p.label===state.period);
 if(_initPeriod) $('period-desc').textContent=t('period_desc')(_initPeriod.days);
