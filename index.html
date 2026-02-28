@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DCA Compass — Portfolio Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0d0f14;--ink2:#161a23;--ink3:#1e2330;
+  --line:#262d3d;--line2:#2f3850;
+  --muted:#5a6480;--muted2:#7a869e;
+  --body:#c8cfdc;--head:#eef0f5;
+  --lime:#b8ff57;--coral:#ff5f5f;--sky:#4db8ff;
+  --gold:#f5c842;--violet:#a78bfa;--orange:#ff9f43;
+  --r:6px;--r2:10px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--body);font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--ink2)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:330px 1fr;min-height:100vh}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.sidebar{background:var(--ink2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+@media(max-width:900px){.sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+.sidebar-header{padding:20px 20px 16px;border-bottom:1px solid var(--line);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:3px}
+.brand-mark{width:30px;height:30px;background:var(--lime);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:17px;color:var(--ink);line-height:1}
+.brand-name{font-family:'Bebas Neue',cursive;font-size:21px;color:var(--head);letter-spacing:1px}
+.brand-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.06em}
+.sidebar-body{padding:14px 18px;flex:1;overflow-y:auto}
+.sidebar-footer{padding:14px 18px;border-top:1px solid var(--line);flex-shrink:0}
+
+/* FORM */
+.section-label{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);margin-bottom:8px;margin-top:18px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.section-label:first-child{margin-top:0}
+.field{margin-bottom:9px}
+.field label{display:block;font-size:10px;color:var(--muted2);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em}
+input[type=text],input[type=number],input[type=date],select{width:100%;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);padding:8px 10px;color:var(--head);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--lime);box-shadow:0 0 0 2px rgba(184,255,87,.08)}
+select option{background:var(--ink3)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* PERIOD PILLS */
+.period-pills{display:flex;flex-wrap:wrap;gap:4px}
+.period-pill{background:var(--ink3);border:1px solid var(--line2);border-radius:4px;padding:4px 9px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .12s}
+.period-pill:hover{border-color:var(--lime);color:var(--lime)}
+.period-pill.active{background:var(--lime);color:var(--ink);border-color:var(--lime);font-weight:600}
+
+/* TYPE PILLS */
+.type-pills{display:flex;gap:4px;margin-bottom:8px}
+.type-pill{background:var(--ink3);border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .1s}
+.type-pill.active{background:var(--sky);color:var(--ink);border-color:var(--sky);font-weight:600}
+.type-pill.fi-type.active{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.type-pill:not(.active):hover{color:var(--sky);border-color:var(--sky)}
+.type-pill.fi-type:not(.active):hover{color:var(--gold);border-color:var(--gold)}
+
+/* HOLDINGS */
+.holdings{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.holding{display:flex;align-items:center;gap:5px;background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:6px 9px;cursor:default;transition:background .12s,border-color .12s}
+.holding:hover{background:#252a38;border-color:var(--line2)}
+.holding-flag{font-size:13px;flex-shrink:0}
+.holding-sym{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--head);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.holding-edit-hint{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;opacity:0;transition:opacity .15s;white-space:nowrap;flex-shrink:0}
+.holding:hover .holding-edit-hint{opacity:1}
+.holding-wt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--lime);background:rgba(184,255,87,.1);border-radius:3px;padding:1px 5px;flex-shrink:0}
+.holding-rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:1px 3px;transition:color .1s;flex-shrink:0}
+.holding-rm:hover{color:var(--coral)}
+.holding.editing{background:#1e2535!important;border-color:var(--lime)!important;box-shadow:0 0 0 2px rgba(184,255,87,.08);flex-wrap:wrap;padding:8px 9px}
+.holding-edit-row{display:flex;align-items:center;gap:5px;width:100%;flex-wrap:wrap}
+.holding-edit-input{background:var(--ink);border:1px solid var(--line2);border-radius:4px;color:var(--head);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:4px 7px;outline:none;transition:border-color .12s}
+.holding-edit-input:focus{border-color:var(--lime)}
+.holding-edit-sym{width:85px;font-weight:600;text-transform:uppercase}
+.holding-edit-wt{width:50px}
+.holding-edit-flag{width:60px;font-size:11px;padding:4px 4px}
+.btn-edit-save{background:var(--lime);border:none;border-radius:4px;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--ink);cursor:pointer}
+.btn-edit-save:hover{background:#c8ff6b}
+.btn-edit-cancel{background:var(--ink3);border:1px solid var(--line2);border-radius:4px;padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer}
+.btn-edit-cancel:hover{color:var(--coral);border-color:var(--coral)}
+.wt-total{font-family:'IBM Plex Mono',monospace;font-size:10px;text-align:right;padding:3px 0;margin-bottom:5px}
+.wt-ok{color:var(--lime)}.wt-warn{color:var(--gold)}.wt-over{color:var(--coral)}
+
+/* ASSET TYPE BADGE */
+.asset-type-badge{font-size:8px;font-family:'IBM Plex Mono',monospace;font-weight:600;text-transform:uppercase;letter-spacing:.06em;border-radius:3px;padding:1px 4px;flex-shrink:0}
+.badge-equity{background:rgba(77,184,255,.12);color:var(--sky)}
+.badge-fi{background:rgba(245,200,66,.15);color:var(--gold)}
+.badge-fx{background:rgba(184,255,87,.1);color:var(--lime)}
+
+/* TICKER ADD ROW */
+.ticker-add-row{display:flex;gap:5px;margin-bottom:4px;align-items:center}
+#new-sym-wrap{flex:1;position:relative}
+#new-sym{padding-right:26px;text-transform:uppercase}
+.validation-icon{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;transition:opacity .2s}
+.validate-hint{font-family:'IBM Plex Mono',monospace;font-size:10px;min-height:14px;transition:color .2s;margin-bottom:6px}
+.hint-ok{color:var(--lime)}.hint-err{color:var(--coral)}.hint-wait{color:var(--gold)}
+.input-validating{border-color:var(--gold)!important}
+.input-valid{border-color:var(--lime)!important;box-shadow:0 0 0 2px rgba(184,255,87,.1)!important}
+.input-invalid{border-color:var(--coral)!important;box-shadow:0 0 0 2px rgba(255,95,95,.1)!important}
+
+/* FI add */
+.fi-info-box{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);border-radius:var(--r);padding:9px 11px;font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:9px}
+.fi-info-box strong{color:var(--gold)}
+.fi-rate-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px}
+
+/* PRESETS */
+.presets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.preset{background:var(--ink3);border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.preset:hover{border-color:var(--violet);color:var(--violet)}
+
+/* AMT */
+.amt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.amt-field{position:relative}
+.amt-field .currency{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);pointer-events:none}
+.amt-field input{padding-left:24px}
+
+/* BUTTONS */
+.btn-add{background:var(--line2);border:1px solid var(--line2);border-radius:var(--r);color:var(--lime);width:32px;height:32px;cursor:pointer;flex:none;font-size:17px;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.btn-add:hover{background:var(--lime);color:var(--ink)}
+.btn-add-text{background:var(--line2);border:1px solid var(--line2);border-radius:var(--r);color:var(--lime);padding:0 13px;height:32px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:inline-flex;align-items:center;transition:all .12s}
+.btn-add-text:hover{background:var(--lime);color:var(--ink)}
+.btn-run{width:100%;padding:12px;background:var(--lime);border:none;border-radius:var(--r);cursor:pointer;font-family:'Bebas Neue',cursive;font-size:19px;color:var(--ink);letter-spacing:1.5px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-run:hover{background:#c8ff6b;transform:translateY(-1px);box-shadow:0 4px 20px rgba(184,255,87,.25)}
+.btn-run:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-run .spin{width:15px;height:15px;border:2px solid rgba(0,0,0,.2);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERRORS */
+.error-msg{background:rgba(255,95,95,.08);border:1px solid rgba(255,95,95,.25);border-radius:var(--r);padding:9px 11px;font-size:11px;color:var(--coral);margin-top:9px;line-height:1.5}
+.ticker-error{background:rgba(255,95,95,.07);border:1px solid rgba(255,95,95,.2);border-radius:var(--r);padding:7px 10px;font-size:10px;color:var(--coral);margin-top:5px;font-family:'IBM Plex Mono',monospace;line-height:1.5}
+.ticker-error strong{font-weight:600}
+.warn-box{background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:var(--r);padding:8px 10px;font-size:10px;color:var(--gold);margin-top:5px;line-height:1.5}
+
+/* NOTES */
+.note{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:var(--r);padding:9px 11px;font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:9px}
+.note strong{color:var(--violet)}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.main-header{padding:20px 26px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0}
+.main-title{font-family:'Bebas Neue',cursive;font-size:26px;color:var(--head);letter-spacing:1px}
+.main-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:1px}
+.cur-switcher{display:flex;background:var(--ink3);border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
+.cur-btn{padding:6px 13px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted2);transition:all .12s}
+.cur-btn.active{background:var(--lime);color:var(--ink)}
+.main-body{padding:20px 26px;flex:1;overflow-y:auto}
+@media(max-width:600px){.main-header,.main-body{padding:14px}}
+
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:700px){.stats-grid{grid-template-columns:1fr 1fr}}
+.stat-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:13px 15px;position:relative;overflow:hidden;animation:fadeUp .4s ease both}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.c-lime::before{background:var(--lime)}.stat-card.c-coral::before{background:var(--coral)}
+.stat-card.c-sky::before{background:var(--sky)}.stat-card.c-gold::before{background:var(--gold)}
+.stat-card.c-violet::before{background:var(--violet)}.stat-card.c-orange::before{background:var(--orange)}
+.stat-card:nth-child(1){animation-delay:.05s}.stat-card:nth-child(2){animation-delay:.1s}
+.stat-card:nth-child(3){animation-delay:.15s}.stat-card:nth-child(4){animation-delay:.2s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:7px}
+.stat-value{font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:.5px;line-height:1}
+.stat-value.pos{color:var(--lime)}.stat-value.neg{color:var(--coral)}
+.stat-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px}
+
+/* TABS */
+.tabs-bar{display:flex;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;flex-shrink:0}
+.tab{padding:9px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;white-space:nowrap;margin-bottom:-1px;letter-spacing:.04em}
+.tab:hover{color:var(--body)}.tab.active{color:var(--lime);border-bottom-color:var(--lime)}
+
+/* CHARTS */
+.chart-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:16px 18px;margin-bottom:14px;animation:fadeUp .4s ease .2s both}
+.chart-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:7px}
+.chart-card-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em}
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chart-wrap{position:relative;height:250px}
+@media(max-width:600px){.chart-wrap{height:190px}}
+
+/* FX */
+.fx-badges{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.fx-badge{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:9px 13px}
+.fx-badge-label{font-size:9px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
+.fx-badge-value{font-family:'Bebas Neue',cursive;font-size:19px}
+
+/* SIGNALS */
+.signals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.signal-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px;animation:fadeUp .4s ease both}
+.signal-ticker{font-family:'Bebas Neue',cursive;font-size:20px;color:var(--head);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.signal-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}
+.signal-row:last-child{border-bottom:none}
+.signal-row-label{font-size:11px;color:var(--muted2)}
+.signal-row-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:20px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.pill::before{content:'';width:5px;height:5px;border-radius:50%}
+.pill-bull{background:rgba(184,255,87,.12);color:var(--lime)}.pill-bull::before{background:var(--lime)}
+.pill-bear{background:rgba(255,95,95,.12);color:var(--coral)}.pill-bear::before{background:var(--coral)}
+.pill-neut{background:rgba(245,200,66,.12);color:var(--gold)}.pill-neut::before{background:var(--gold)}
+
+/* TABLES */
+.table-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--ink3);padding:9px 13px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500;white-space:nowrap;border-bottom:1px solid var(--line)}
+tbody td{padding:8px 13px;border-bottom:1px solid var(--line);color:var(--body);font-family:'IBM Plex Mono',monospace;font-size:11px;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--ink3)}
+.td-pos{color:var(--lime)}.td-neg{color:var(--coral)}.td-sky{color:var(--sky)}.td-gold{color:var(--gold)}
+
+/* BENCHMARK OPTIMIZER */
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px}
+.bm-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px;position:relative;overflow:hidden;animation:fadeUp .4s ease both}
+.bm-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.bm-card.winner{border-color:var(--lime)}
+.bm-card.winner::before{background:var(--lime)}
+.bm-card.user-portfolio::before{background:var(--violet)}
+.bm-name{font-family:'Bebas Neue',cursive;font-size:16px;color:var(--head);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-ret{font-family:'Bebas Neue',cursive;font-size:26px;line-height:1;margin-bottom:4px}
+.bm-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
+.bm-winner-badge{position:absolute;top:8px;right:8px;background:var(--lime);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+.bm-select-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.bm-select-item{display:flex;align-items:center;gap:5px;background:var(--ink3);border:1px solid var(--line2);border-radius:4px;padding:4px 9px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .12s;user-select:none}
+.bm-select-item:hover{border-color:var(--violet);color:var(--violet)}
+.bm-select-item.selected{background:rgba(167,139,250,.15);border-color:var(--violet);color:var(--violet)}
+.bm-select-item input[type=checkbox]{width:12px;height:12px;accent-color:var(--violet);cursor:pointer}
+.opt-settings{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
+.opt-settings-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.opt-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* LOADING */
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:60px 24px;gap:14px;min-height:400px}
+.loading-bar-wrap{width:200px;height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+.loading-bar{height:100%;background:var(--lime);border-radius:2px;animation:loadbar 1.5s ease-in-out infinite}
+@keyframes loadbar{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+.loading-ticker{font-family:'Bebas Neue',cursive;font-size:17px;color:var(--lime);letter-spacing:2px}
+.progress-items{display:flex;flex-direction:column;gap:4px;width:220px}
+.progress-item{display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.progress-item.done{color:var(--lime)}.progress-item.active{color:var(--body)}.progress-item.wait{color:var(--muted)}
+.progress-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.progress-item.done .progress-dot{background:var(--lime)}
+.progress-item.active .progress-dot{background:var(--body);animation:pulse 1s ease infinite}
+.progress-item.wait .progress-dot{background:var(--line)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:60px 24px;text-align:center;color:var(--muted);min-height:400px}
+.empty-icon{font-size:44px;margin-bottom:14px;opacity:.4;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.empty h2{font-family:'Bebas Neue',cursive;font-size:22px;color:var(--muted2);margin-bottom:7px;letter-spacing:1px}
+.empty p{font-size:12px;max-width:300px;line-height:1.6}
+
+/* STRATEGY OPTIMIZER */
+.strat-banner{background:linear-gradient(135deg,rgba(184,255,87,.07),rgba(167,139,250,.07));border:1px solid rgba(184,255,87,.18);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px}
+.strat-banner-title{font-family:'Bebas Neue',cursive;font-size:22px;color:var(--lime);letter-spacing:1px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.strat-banner-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);line-height:1.6}
+.strat-winner-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px}
+.strat-winner-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:12px 14px;position:relative;overflow:hidden;animation:fadeUp .3s ease both}
+.strat-winner-card.gold-card{border-color:var(--lime);box-shadow:0 0 0 1px rgba(184,255,87,.15)}
+.strat-winner-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--line)}
+.strat-winner-card.gold-card::before{background:var(--lime)}
+.strat-card-label{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
+.strat-card-val{font-family:'Bebas Neue',cursive;font-size:22px;line-height:1;color:var(--head)}
+.strat-card-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px}
+.strat-gold-badge{position:absolute;top:7px;right:7px;background:var(--lime);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;text-transform:uppercase}
+
+/* ALLOCATION TABLE */
+.alloc-table-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line);margin-bottom:16px}
+.alloc-table{width:100%;border-collapse:collapse;font-size:11px}
+.alloc-table th{background:var(--ink3);padding:8px 10px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+.alloc-table td{padding:7px 10px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:center;white-space:nowrap;cursor:pointer;transition:background .1s}
+.alloc-table td:first-child{text-align:left;color:var(--head);font-weight:600}
+.alloc-table tr:last-child td{border-bottom:none}
+.alloc-table tr:hover td{background:rgba(255,255,255,.03)}
+.alloc-table td.cell-best{background:rgba(184,255,87,.15);color:var(--lime);font-weight:600}
+.alloc-table td.cell-good{background:rgba(184,255,87,.07);color:var(--lime)}
+.alloc-table td.cell-ok{background:rgba(77,184,255,.05);color:var(--sky)}
+.alloc-table td.cell-bad{color:var(--muted)}
+.alloc-table td.cell-neg{color:var(--coral)}
+
+/* FREQ ROWS */
+.freq-row{display:grid;grid-template-columns:80px 1fr;gap:0;align-items:stretch;margin-bottom:3px;border-radius:var(--r);overflow:hidden}
+.freq-label{background:var(--ink3);border:1px solid var(--line);border-right:none;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:16px;color:var(--muted2);letter-spacing:.5px;padding:8px}
+.freq-label.freq-best{background:rgba(184,255,87,.1);color:var(--lime);border-color:rgba(184,255,87,.3)}
+.freq-cells{display:flex;gap:2px;background:var(--ink3);border:1px solid var(--line);border-left:none;padding:4px;overflow-x:auto}
+.freq-cell{min-width:54px;border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;flex-shrink:0}
+.freq-cell:hover{filter:brightness(1.2)}
+.freq-cell-ret{font-family:'Bebas Neue',cursive;font-size:13px;line-height:1}
+.freq-cell-wt{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.5);margin-top:2px;text-align:center;line-height:1.3}
+
+/* DETAIL DRAWER */
+.strat-detail{background:var(--ink2);border:1px solid var(--lime);border-radius:var(--r2);padding:16px 18px;margin-bottom:16px;animation:fadeUp .25s ease}
+.strat-detail-title{font-family:'Bebas Neue',cursive;font-size:18px;color:var(--lime);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.strat-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.strat-detail-kv{background:var(--ink3);border-radius:var(--r);padding:8px 10px}
+.strat-detail-k{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
+.strat-detail-v{font-family:'Bebas Neue',cursive;font-size:18px;line-height:1}
+
+/* WEIGHT DISPLAY */
+.weight-bars{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.weight-bar-item{flex:1;min-width:80px;background:var(--ink3);border-radius:var(--r);padding:8px 10px}
+.weight-bar-name{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weight-bar-track{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:3px}
+.weight-bar-fill{height:100%;border-radius:2px;background:var(--lime)}
+.weight-bar-pct{font-family:'Bebas Neue',cursive;font-size:14px;color:var(--lime)}
+
+.strat-settings{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:14px}
+.strat-settings-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.strat-field-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:700px){.strat-field-row{grid-template-columns:1fr 1fr}}
+
+footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-align:center;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-mark">Δ</div>
+        <div>
+          <div class="brand-name">DCA Compass</div>
+        </div>
+      </div>
+      <div class="brand-sub">USA · Brazil · Cross-Currency Simulator</div>
+    </div>
+
+    <div class="sidebar-body">
+
+      <div class="section-label">Quick Presets</div>
+      <div class="presets" id="presets"></div>
+
+      <div class="section-label">Portfolio</div>
+      <div class="holdings" id="holdings"></div>
+      <div class="wt-total" id="wt-total"></div>
+
+      <!-- type selector -->
+      <div class="type-pills">
+        <button class="type-pill active" data-atype="equity">📈 Equity/ETF</button>
+        <button class="type-pill fi-type" data-atype="fi">🏦 Fixed Income</button>
+      </div>
+
+      <!-- equity add -->
+      <div id="equity-add-row">
+        <div class="ticker-add-row">
+          <div id="new-sym-wrap">
+            <input type="text" id="new-sym" placeholder="VUG, BOVA11.SA…" maxlength="20" autocomplete="off" spellcheck="false">
+            <span class="validation-icon" id="val-icon"></span>
+          </div>
+          <input type="number" id="new-wt" placeholder="Wt%" min="1" max="100" value="10" style="width:54px;flex:none">
+          <select id="new-flag" style="width:64px;flex:none">
+            <option value="🇺🇸">🇺🇸 US</option>
+            <option value="🇧🇷">🇧🇷 BR</option>
+            <option value="💱">💱 FX</option>
+          </select>
+          <button class="btn-add" id="btn-add" title="Add">+</button>
+        </div>
+        <div class="validate-hint" id="val-hint"></div>
+      </div>
+
+      <!-- FI add -->
+      <div id="fi-add-row" style="display:none">
+        <div class="fi-info-box">
+          <strong>Fixed Income</strong> — synthetic compounded series, no market data needed.<br>
+          Supported: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, or any custom rate.
+        </div>
+        <div class="fi-rate-row">
+          <div class="field"><label>Name / Label</label><input type="text" id="fi-name" placeholder="e.g. CDB 12%" maxlength="20"></div>
+          <div class="field"><label>Weight %</label><input type="number" id="fi-wt" value="10" min="1" max="100"></div>
+        </div>
+        <div class="fi-rate-row">
+          <div class="field"><label>Annual Rate %</label><input type="number" id="fi-rate" value="12" step="0.1" min="0" max="100"></div>
+          <div class="field"><label>Currency</label>
+            <select id="fi-cur"><option value="BRL">🇧🇷 BRL</option><option value="USD">🇺🇸 USD</option></select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:8px">
+          <label>Presets</label>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <button class="preset" data-fi-preset="CDB 12%,12,BRL">CDB 12%</button>
+            <button class="preset" data-fi-preset="CDB CDI,13.65,BRL">CDB CDI</button>
+            <button class="preset" data-fi-preset="LCI 10%,10,BRL">LCI 10%</button>
+            <button class="preset" data-fi-preset="I-Bond,4.28,USD">I-Bond</button>
+            <button class="preset" data-fi-preset="T-Bill,5.25,USD">T-Bill</button>
+          </div>
+        </div>
+        <button class="btn-add-text" id="btn-add-fi">+ Add Fixed Income</button>
+      </div>
+
+      <div class="note" style="margin-top:9px">
+        <strong>US ETFs:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br>
+        <strong>Brazil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br>
+        <strong>FI:</strong> CDB, LCI, I-Bond, T-Bill (synthetic, no fetch)<br>
+        <strong>Tip:</strong> Double-click any holding to edit inline
+      </div>
+
+      <div class="section-label">Date Range</div>
+      <div class="field-row">
+        <div class="field"><label>Start Date</label><input type="date" id="start-date" value="2020-01-01"></div>
+        <div class="field"><label>End Date</label><input type="date" id="end-date"></div>
+      </div>
+
+      <div class="section-label">Investment Period</div>
+      <div class="period-pills" id="period-pills"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:5px;font-family:'IBM Plex Mono',monospace" id="period-desc">Invest every 30 days</div>
+
+      <div class="section-label">Periodic Investment</div>
+      <div class="amt-row">
+        <div class="field amt-field"><label>USD per period</label><span class="currency">$</span><input type="number" id="amt-usd" value="500" min="0" placeholder="0"></div>
+        <div class="field amt-field"><label>BRL per period</label><span class="currency">R$</span><input type="number" id="amt-brl" value="0" min="0" placeholder="0"></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:2px">Both currencies accepted. BRL uses historical FX rate at time of each purchase.</div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-run" id="btn-run">RUN SIMULATION</button>
+      <div class="error-msg" id="error-msg" style="display:none"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="panel-title">Portfolio Results</div>
+        <div class="main-sub" id="panel-sub">Configure your portfolio and run the simulation</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="cur-switcher">
+          <button class="cur-btn active" data-cur="USD">USD $</button>
+          <button class="cur-btn" data-cur="BRL">BRL R$</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-body">
+      <div id="panel-empty" class="empty">
+        <div class="empty-icon">📡</div>
+        <h2>Ready to Simulate</h2>
+        <p>Build your portfolio on the left, set your DCA parameters, and hit Run Simulation to see historical returns in both USD and BRL.</p>
+      </div>
+      <div id="panel-loading" class="loading-state" style="display:none">
+        <div class="loading-ticker" id="loading-ticker">FETCHING DATA</div>
+        <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+        <div class="progress-items" id="progress-items"></div>
+      </div>
+      <div id="panel-results" style="display:none"></div>
+    </div>
+    <footer>Data via Yahoo Finance (public API) · FX applied at each purchase date · For educational purposes only — not financial advice</footer>
+  </main>
+</div>
+
+<script>
+// ================================================================
+//  CONSTANTS
+// ================================================================
+const PERIODS = [
+  {label:"1W",days:7},{label:"2W",days:14},{label:"1M",days:30},
+  {label:"2M",days:60},{label:"3M",days:90},{label:"6M",days:182},
+];
+
+const PRESETS = [
+  {label:"SPY + EWZ",    tickers:[{sym:"SPY",wt:60,flag:"🇺🇸",type:"equity"},{sym:"EWZ",wt:40,flag:"🇺🇸",type:"equity"}]},
+  {label:"US 60/40",     tickers:[{sym:"SPY",wt:60,flag:"🇺🇸",type:"equity"},{sym:"BND",wt:40,flag:"🇺🇸",type:"equity"}]},
+  {label:"BOVA11 Only",  tickers:[{sym:"BOVA11.SA",wt:100,flag:"🇧🇷",type:"equity"}]},
+  {label:"QQQ + BOVA11", tickers:[{sym:"QQQ",wt:50,flag:"🇺🇸",type:"equity"},{sym:"BOVA11.SA",wt:50,flag:"🇧🇷",type:"equity"}]},
+  {label:"Global Mix",   tickers:[{sym:"SPY",wt:40,flag:"🇺🇸",type:"equity"},{sym:"QQQ",wt:20,flag:"🇺🇸",type:"equity"},{sym:"BOVA11.SA",wt:25,flag:"🇧🇷",type:"equity"},{sym:"GLD",wt:15,flag:"🇺🇸",type:"equity"}]},
+  {label:"Brazil Focus", tickers:[{sym:"BOVA11.SA",wt:50,flag:"🇧🇷",type:"equity"},{sym:"PETR4.SA",wt:25,flag:"🇧🇷",type:"equity"},{sym:"VALE3.SA",wt:25,flag:"🇧🇷",type:"equity"}]},
+  {label:"DCA + CDB",    tickers:[{sym:"BOVA11.SA",wt:60,flag:"🇧🇷",type:"equity"},{sym:"CDB 12%",wt:40,flag:"🇧🇷",type:"fi",fiRate:12,fiCur:"BRL"}]},
+  {label:"SPY + I-Bond", tickers:[{sym:"SPY",wt:70,flag:"🇺🇸",type:"equity"},{sym:"I-Bond",wt:30,flag:"🇺🇸",type:"fi",fiRate:4.28,fiCur:"USD"}]},
+];
+
+// Available benchmarks for the Optimizer tab
+const BENCHMARK_OPTIONS = [
+  {id:"SPY",       label:"SPY (US Large Cap)",  type:"equity", flag:"🇺🇸"},
+  {id:"QQQ",       label:"QQQ (Nasdaq 100)",    type:"equity", flag:"🇺🇸"},
+  {id:"VTI",       label:"VTI (Total Market)",  type:"equity", flag:"🇺🇸"},
+  {id:"BOVA11.SA", label:"BOVA11 (Ibovespa)",   type:"equity", flag:"🇧🇷"},
+  {id:"EWZ",       label:"EWZ (Brazil ETF)",    type:"equity", flag:"🇺🇸"},
+  {id:"GLD",       label:"GLD (Gold)",          type:"equity", flag:"🇺🇸"},
+  {id:"BND",       label:"BND (US Bonds)",      type:"equity", flag:"🇺🇸"},
+  {id:"I-Bond_fi", label:"I-Bond (4.28%)",      type:"fi",     flag:"🇺🇸", fiRate:4.28, fiCur:"USD"},
+  {id:"CDB_fi",    label:"CDB CDI (13.65%)",    type:"fi",     flag:"🇧🇷", fiRate:13.65,fiCur:"BRL"},
+  {id:"TBill_fi",  label:"T-Bill (5.25%)",      type:"fi",     flag:"🇺🇸", fiRate:5.25, fiCur:"USD"},
+];
+
+// ================================================================
+//  STATE
+// ================================================================
+let state = {
+  tickers:[{sym:"SPY",wt:60,flag:"🇺🇸",type:"equity"},{sym:"EWZ",wt:40,flag:"🇺🇸",type:"equity"}],
+  period:"1M",
+  viewCur:"USD",
+  result:null,
+  charts:{},
+  editingIdx:null,
+  validationTimer:null,
+  validationCache:{},
+  activeAddType:"equity",
+  selectedBenchmarks: new Set(["SPY","BOVA11.SA","I-Bond_fi","CDB_fi"]),
+};
+
+// ================================================================
+//  UTILS
+// ================================================================
+const fmt    = (n,d=2) => n==null?"—":Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtUSD = n => n==null?"—":(n<0?"-":"")+"$"+fmt(Math.abs(n));
+const fmtBRL = n => n==null?"—":(n<0?"-":"")+"R$"+fmt(Math.abs(n));
+const fmtPct = n => n==null?"—":(n>=0?"+":"")+fmt(n)+"%";
+const clr    = n => n>=0?"var(--lime)":"var(--coral)";
+const cls    = n => n>=0?"pos":"neg";
+const $      = id => document.getElementById(id);
+
+function datePlusDays(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x.toISOString().slice(0,10)}
+function toUnix(d){return Math.floor(new Date(d).getTime()/1000)}
+function buildInvestDates(start,end,days){const r=[];let c=start;while(c<=end){r.push(c);c=datePlusDays(c,days)}return r}
+function buildPriceMap(pairs){const m={};pairs.forEach(p=>{m[p.date]=p.price});return m}
+
+// Lookup price: exact match first, then scan back up to 7 days
+function lookupPrice(map,date){
+  if(map[date]!=null) return map[date];
+  for(let i=1;i<=7;i++){const p=datePlusDays(date,-i);if(map[p]!=null)return map[p]}
+  return null;
+}
+
+// ================================================================
+//  FIXED INCOME — synthetic compounded series (base 100)
+// ================================================================
+function generateFIPairs(startDate,endDate,annualRate){
+  const dr=Math.pow(1+annualRate/100,1/365)-1;
+  const pairs=[];
+  let cur=new Date(startDate);
+  const end=new Date(endDate);
+  let price=100;
+  while(cur<=end){
+    pairs.push({date:cur.toISOString().slice(0,10),price:parseFloat(price.toFixed(6))});
+    price*=(1+dr);
+    cur.setDate(cur.getDate()+1);
+  }
+  return pairs;
+}
+
+// ================================================================
+//  FETCH — Yahoo Finance via CORS proxies with full error context
+// ================================================================
+const PROXIES=[
+  u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+];
+
+// Try v8 API first, then v10 as fallback
+async function fetchYahoo(ticker,startDate,endDate){
+  const p1=toUnix(startDate), p2=toUnix(endDate)+86400;
+  const urls=[
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?period1=${p1}&period2=${p2}&interval=1d&events=history&includeAdjustedClose=true`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?period1=${p1}&period2=${p2}&interval=1d&events=history&includeAdjustedClose=true`,
+  ];
+
+  const errors=[];
+  for(const yhUrl of urls){
+    for(const makeProxy of PROXIES){
+      try{
+        const res=await fetch(makeProxy(yhUrl),{signal:AbortSignal.timeout(20000)});
+        if(!res.ok){errors.push(`HTTP ${res.status} for ${ticker}`);continue}
+        const outer=await res.json();
+        const raw=outer.contents?JSON.parse(outer.contents):outer;
+        const chart=raw?.chart;
+        if(chart?.error){
+          const desc=chart.error.description||chart.error.code||"Unknown Yahoo error";
+          errors.push(`Yahoo: ${desc} (${ticker})`);
+          // If it's a "Not Found" error, no point trying more proxies for this URL
+          if(chart.error.code==="Not Found"||desc.toLowerCase().includes("no data")){
+            throw new Error(`Ticker "${ticker}" not found on Yahoo Finance. Check the symbol — for US stocks use plain symbol (VUG, SPY), for Brazil B3 add .SA suffix (BOVA11.SA, PETR4.SA).`);
+          }
+          continue;
+        }
+        const result=chart?.result?.[0];
+        if(!result){errors.push(`No result object for ${ticker}`);continue}
+        const timestamps=result.timestamp||[];
+        const closes=result.indicators?.adjclose?.[0]?.adjclose||result.indicators?.quote?.[0]?.close||[];
+        const pairs=timestamps.map((t,i)=>({date:new Date(t*1000).toISOString().slice(0,10),price:closes[i]}))
+          .filter(d=>d.price!=null&&d.price>0&&isFinite(d.price));
+        if(pairs.length===0){errors.push(`Empty price series for ${ticker}`);continue}
+        return pairs;
+      }catch(e){
+        if(e.message.includes("not found on Yahoo Finance")||e.message.includes("Check the symbol")) throw e;
+        errors.push(e.message);
+      }
+    }
+  }
+  // Compose a clear error
+  const uniqueErrors=[...new Set(errors)];
+  throw new Error(
+    `Failed to fetch "${ticker}". ${uniqueErrors.slice(0,2).join(" | ")}\n` +
+    `Tip: US ETFs/stocks use plain symbols (VUG, SPY, QQQ). Brazil B3 stocks need .SA suffix (BOVA11.SA, VALE3.SA). FX: BRL=X`
+  );
+}
+
+// ================================================================
+//  TICKER VALIDATION (live check, non-blocking)
+// ================================================================
+async function validateTicker(sym){
+  const upper=sym.toUpperCase();
+  if(state.validationCache[upper]!==undefined) return state.validationCache[upper];
+  const p2=toUnix(new Date().toISOString().slice(0,10))+86400;
+  const p1=p2-86400*10;
+  const yhUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(upper)}?period1=${p1}&period2=${p2}&interval=1d`;
+  for(const makeProxy of PROXIES){
+    try{
+      const res=await fetch(makeProxy(yhUrl),{signal:AbortSignal.timeout(10000)});
+      if(!res.ok) continue;
+      const outer=await res.json();
+      const raw=outer.contents?JSON.parse(outer.contents):outer;
+      const chart=raw?.chart;
+      if(chart?.error){
+        state.validationCache[upper]={valid:false,name:null};
+        return state.validationCache[upper];
+      }
+      const meta=chart?.result?.[0]?.meta;
+      if(!meta) continue;
+      const r={valid:true,name:meta.shortName||meta.longName||upper,qtype:meta.quoteType||""};
+      state.validationCache[upper]=r;
+      return r;
+    }catch(e){}
+  }
+  return null;
+}
+
+function setValState(vs,msg){
+  const icon=$('val-icon'),hint=$('val-hint'),inp=$('new-sym');
+  if(!icon||!hint||!inp) return;
+  inp.classList.remove('input-validating','input-valid','input-invalid');
+  icon.textContent='';hint.textContent=msg||'';hint.className='validate-hint';
+  if(vs==='loading'){inp.classList.add('input-validating');icon.textContent='⟳';hint.classList.add('hint-wait')}
+  else if(vs==='valid'){inp.classList.add('input-valid');icon.textContent='✓';hint.classList.add('hint-ok')}
+  else if(vs==='invalid'){inp.classList.add('input-invalid');icon.textContent='✗';hint.classList.add('hint-err')}
+}
+
+function scheduleValidation(sym){
+  clearTimeout(state.validationTimer);
+  if(!sym){setValState('idle');return}
+  setValState('loading','Checking…');
+  state.validationTimer=setTimeout(async()=>{
+    const r=await validateTicker(sym);
+    if(r===null){setValState('idle','');return}
+    if(r.valid) setValState('valid',r.name?`✓ ${r.name}`:'✓ Valid');
+    else setValState('invalid',`✗ "${sym.toUpperCase()}" not found — check symbol`);
+  },650);
+}
+
+// ================================================================
+//  DCA ENGINE
+//  Key fix: cost basis in BRL uses the FX rate AT THE TIME of each
+//  purchase, not the current FX rate. For USD-denominated assets,
+//  the BRL value of the portfolio is computed as:
+//    BRL value = USD cost basis (converted at purchase FX) + USD gain (converted at current FX)
+//  Actually, the simplest correct approach:
+//    - Track totalInvestedBRL as sum of (investUSD * fxAtPurchase) for each event
+//    - Track portfolio value in BRL as portUSD * currentFX
+//    - Return on BRL = (portBRL / totalInvestedBRL) - 1
+// ================================================================
+function runDCA({tickerData,fxPairs,investDates,amtUSD,amtBRL,weights}){
+  const fxMap=buildPriceMap(fxPairs);
+
+  const assetResults=tickerData.map((td,i)=>{
+    const priceMap=buildPriceMap(td.pairs);
+    const wf=weights[i];
+    const isFI=td.type==='fi';
+    const fiCur=td.fiCur||'USD';
+    let sharesAccum=0;
+    const events=[];
+
+    for(const date of investDates){
+      const price=lookupPrice(priceMap,date);
+      // Use historical FX at this specific date
+      const fx=lookupPrice(fxMap,date)||5.2;
+
+      // Compute the USD amount to invest in this asset
+      let investUSD=0;
+      if(amtUSD>0) investUSD+=amtUSD*wf;
+      if(amtBRL>0) investUSD+=(amtBRL*wf)/fx; // convert BRL investment to USD at purchase-date FX
+
+      // For BRL-denominated FI: buy units in BRL
+      let investNative=investUSD;
+      if(isFI&&fiCur==='BRL') investNative=investUSD*fx;
+
+      if(price&&investNative>0){
+        const units=investNative/price;
+        sharesAccum+=units;
+        // investBRL = USD investment converted at the PURCHASE DATE FX rate
+        events.push({date,price,shares:units,investUSD,investBRL:investUSD*fx,fx});
+      }
+    }
+
+    return{
+      sym:td.sym,flag:td.flag,wf,type:td.type||'equity',
+      pairs:td.pairs,priceMap,fiCur:td.fiCur,
+      sharesAccum,events,
+      totalInvestedUSD:events.reduce((a,e)=>a+e.investUSD,0),
+      // BRL cost basis = sum of (USD invested * FX at time of investment)
+      totalInvestedBRL:events.reduce((a,e)=>a+e.investBRL,0),
+    };
+  });
+
+  // Build timeline over all price dates
+  const allDates=new Set();
+  tickerData.forEach(td=>td.pairs.forEach(p=>allDates.add(p.date)));
+  const sortedDates=Array.from(allDates).sort();
+
+  const timeline=[];
+  for(const date of sortedDates){
+    let portUSD=0,invUSD=0,invBRL=0;
+    const fxNow=lookupPrice(fxMap,date)||5.2;
+
+    for(const ar of assetResults){
+      const price=lookupPrice(ar.priceMap,date);
+      const pastEvents=ar.events.filter(e=>e.date<=date);
+      const cumUnits=pastEvents.reduce((a,e)=>a+e.shares,0);
+      if(price&&cumUnits>0){
+        const nativeVal=cumUnits*price;
+        // Convert to USD: BRL-FI divides by current FX; USD assets stay as-is
+        portUSD+=(ar.type==='fi'&&ar.fiCur==='BRL')?(nativeVal/fxNow):nativeVal;
+      }
+      invUSD+=pastEvents.reduce((a,e)=>a+e.investUSD,0);
+      // Cost basis in BRL = sum of (USD invested * FX at time of each purchase)
+      invBRL+=pastEvents.reduce((a,e)=>a+e.investBRL,0);
+    }
+
+    if(invUSD>0){
+      const portBRL=portUSD*fxNow; // current market value in BRL
+      timeline.push({date,valueUSD:portUSD,valueBRL:portBRL,
+        investedUSD:invUSD,investedBRL:invBRL,
+        gainUSD:portUSD-invUSD,gainBRL:portBRL-invBRL,fx:fxNow});
+    }
+  }
+
+  const last=timeline[timeline.length-1];
+  const totalInvUSD=assetResults.reduce((a,r)=>a+r.totalInvestedUSD,0);
+  // BRL cost basis uses historical FX at each purchase — not a simple today conversion
+  const totalInvBRL=assetResults.reduce((a,r)=>a+r.totalInvestedBRL,0);
+  const finalFX=fxPairs.length?fxPairs[fxPairs.length-1].price:5.2;
+  const startFX=fxPairs.length?fxPairs[0].price:5.2;
+  const fxChangePct=((finalFX/startFX)-1)*100;
+  const retUSD=totalInvUSD>0?((last.valueUSD/totalInvUSD)-1)*100:0;
+  const retBRL=totalInvBRL>0?((last.valueBRL/totalInvBRL)-1)*100:0;
+  const totalPurchases=assetResults.reduce((a,r)=>a+r.events.length,0);
+
+  return{timeline,assetResults,fxPairs,totalInvUSD,totalInvBRL,
+    finalValUSD:last.valueUSD,finalValBRL:last.valueBRL,
+    retUSD,retBRL,totalPurchases,fxChangePct,finalFX,startFX};
+}
+
+// ================================================================
+//  STRATEGY OPTIMIZER ENGINE
+//
+//  Sweeps all 6 DCA frequencies × all weight combinations (at step%
+//  increments) for the user's portfolio tickers.
+//  All computations use already-fetched price data — ZERO extra
+//  network calls after the first simulation run.
+//
+//  "Tuesday-only" rule: each scheduled date is advanced to the
+//  next Tuesday (weekday 2) before looking up a price, giving a
+//  realistic "always invest on Tuesday" backtest.
+//
+//  Returns a matrix: rows = weight combos, cols = frequencies.
+// ================================================================
+
+const STRAT_FREQS = [
+  {label:"1W",  days:7 },
+  {label:"2W",  days:14},
+  {label:"1M",  days:30},
+  {label:"2M",  days:60},
+  {label:"3M",  days:90},
+  {label:"6M",  days:182},
+];
+
+// Advance a date string to the next or same Tuesday (weekday=2)
+function nextTuesday(dateStr){
+  const d=new Date(dateStr+'T12:00:00Z');
+  const dow=d.getUTCDay(); // 0=Sun,1=Mon,2=Tue,...
+  const diff=dow<=2?(2-dow):(9-dow); // days until next Tue (same day counts)
+  d.setUTCDate(d.getUTCDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+
+// Build invest dates snapped to Tuesdays
+function buildTuesdayDates(start,end,periodDays){
+  const dates=[];
+  let cur=start;
+  while(cur<=end){
+    const tue=nextTuesday(cur);
+    if(tue<=end) dates.push(tue);
+    cur=datePlusDays(cur,periodDays);
+  }
+  // Deduplicate (unlikely but safe)
+  return [...new Set(dates)].sort();
+}
+
+// Fast DCA using pre-built price maps — returns {retUSD, retBRL, finalValUSD, totalInvUSD, purchases, cagr}
+function fastDCA(priceMaps, fxMap, fiFlags, fiCurs, weights, investDates, amtPerPeriodUSD, endDate){
+  const sharesArr=new Array(priceMaps.length).fill(0);
+  let totalInvUSD=0, totalInvBRL=0;
+  let firstDate=null;
+
+  for(const date of investDates){
+    const fx=lookupPrice(fxMap,date)||5.2;
+    let anyOk=false;
+    const portions=[];
+    for(let i=0;i<priceMaps.length;i++){
+      const price=lookupPrice(priceMaps[i],date);
+      if(!price){portions.push(null);continue}
+      const wf=weights[i];
+      const investUSD=amtPerPeriodUSD*wf;
+      let investNative=investUSD;
+      if(fiFlags[i]&&fiCurs[i]==='BRL') investNative=investUSD*fx;
+      portions.push({units:investNative/price,investUSD,fx});
+      anyOk=true;
+    }
+    if(!anyOk) continue;
+    if(!firstDate) firstDate=date;
+    for(let i=0;i<portions.length;i++){
+      if(!portions[i]) continue;
+      sharesArr[i]+=portions[i].units;
+      totalInvUSD+=portions[i].investUSD;
+      totalInvBRL+=portions[i].investUSD*portions[i].fx;
+    }
+  }
+
+  if(totalInvUSD===0) return null;
+
+  // Use endDate (or closest available) for final valuation — NOT last invest date
+  // This ensures we always value at the requested end of the lookback window
+  const valDate=endDate||investDates[investDates.length-1];
+  const finalFX=lookupPrice(fxMap,valDate)||5.2;
+
+  let finalValUSD=0;
+  for(let i=0;i<priceMaps.length;i++){
+    let price=lookupPrice(priceMaps[i],valDate);
+    // If no price on valDate, scan back up to 30 days (month-end window)
+    if(!price){
+      for(let back=1;back<=30;back++){
+        price=priceMaps[i][datePlusDays(valDate,-back)];
+        if(price!=null) break;
+      }
+    }
+    if(!price) continue;
+    const nativeVal=sharesArr[i]*price;
+    finalValUSD+=(fiFlags[i]&&fiCurs[i]==='BRL')?(nativeVal/finalFX):nativeVal;
+  }
+
+  const retUSD=totalInvUSD>0?((finalValUSD/totalInvUSD)-1)*100:0;
+  const retBRL=totalInvBRL>0?((finalValUSD*finalFX/totalInvBRL)-1)*100:0;
+  const finalValBRL=finalValUSD*finalFX;
+
+  // CAGR (annualized return)
+  let cagrUSD=null;
+  if(firstDate&&valDate&&totalInvUSD>0&&finalValUSD>0){
+    const years=(new Date(valDate)-new Date(firstDate))/(365.25*86400000);
+    if(years>0.1) cagrUSD=(Math.pow(finalValUSD/totalInvUSD,1/years)-1)*100;
+  }
+
+  return{retUSD,retBRL,finalValUSD,finalValBRL,totalInvUSD,totalInvBRL,
+    purchases:investDates.length,cagrUSD,finalFX};
+}
+
+// Generate all weight combinations for N assets at stepPct increments that sum to 100.
+// E.g. 2 assets, step=10: [10,90],[20,80],...,[90,10]
+function genWeightCombos(n, stepPct){
+  const combos=[];
+  if(n===1){return[[100]];}
+  function recurse(remaining, current){
+    if(current.length===n-1){
+      // last slot gets whatever remains — must be a valid multiple of stepPct and >=stepPct
+      const last=Math.round(remaining);
+      if(last>=stepPct && last%stepPct===0) combos.push([...current,last]);
+      return;
+    }
+    const minRemain=stepPct*(n-current.length-1); // minimum needed for the slots after this
+    for(let v=stepPct; v<=remaining-minRemain; v+=stepPct){
+      recurse(remaining-v,[...current,v]);
+    }
+  }
+  recurse(100,[]);
+  return combos;
+}
+
+// Format a weight combo as a label e.g. "60/40"
+function fmtWeights(combo,syms){
+  if(combo.length===1) return syms[0]||'100%';
+  return combo.map((w,i)=>`${syms[i]?syms[i].split('.')[0]:w}:${w}%`).join(' · ');
+}
+function fmtWeightsShort(combo){
+  return combo.join('/');
+}
+
+// Main strategy optimizer — runs synchronously on fetched data
+function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,endDate,stepPct}){
+  const fxMap=buildPriceMap(fxPairs);
+  const n=tickerData.length;
+  const syms=tickerData.map(t=>t.sym);
+  const priceMaps=tickerData.map(t=>buildPriceMap(t.pairs));
+  const fiFlags=tickerData.map(t=>t.type==='fi');
+  const fiCurs=tickerData.map(t=>t.fiCur||'USD');
+
+  const combos=genWeightCombos(n,stepPct);
+  const results=[]; // {weights, byFreq: [{freq, ...fastDCA result}]}
+  let globalBest={retUSD:-Infinity};
+  // Collect all individual (combo×freq) results for top-5 ranking
+  const allRuns=[];
+
+  for(const combo of combos){
+    const weights=combo.map(w=>w/100);
+    const byFreq=[];
+
+    for(const freq of STRAT_FREQS){
+      const amtPerPeriod=annualBudgetUSD/(365/freq.days);
+      const dates=buildTuesdayDates(startDate,endDate,freq.days);
+      if(dates.length===0){byFreq.push(null);continue;}
+
+      const r=fastDCA(priceMaps,fxMap,fiFlags,fiCurs,weights,dates,amtPerPeriod,endDate);
+      const entry=r?{...r,freq:freq.label,days:freq.days}:null;
+      byFreq.push(entry);
+
+      if(r){
+        allRuns.push({retUSD:r.retUSD,retBRL:r.retBRL,cagrUSD:r.cagrUSD,
+          finalValUSD:r.finalValUSD,finalValBRL:r.finalValBRL,
+          totalInvUSD:r.totalInvUSD,totalInvBRL:r.totalInvBRL,
+          purchases:r.purchases,finalFX:r.finalFX,
+          freq:freq.label,days:freq.days,combo,weights,syms});
+        if(r.retUSD>globalBest.retUSD){
+          globalBest={retUSD:r.retUSD,retBRL:r.retBRL,cagrUSD:r.cagrUSD,
+            finalValUSD:r.finalValUSD,finalValBRL:r.finalValBRL,
+            totalInvUSD:r.totalInvUSD,totalInvBRL:r.totalInvBRL,
+            purchases:r.purchases,finalFX:r.finalFX,
+            label:freq.label,days:freq.days,weights,combo,syms};
+        }
+      }
+    }
+    results.push({combo,weights,syms,byFreq});
+  }
+
+  // Sort all runs, take top 5
+  allRuns.sort((a,b)=>b.retUSD-a.retUSD);
+  const top5=allRuns.slice(0,5);
+
+  return{results,globalBest,syms,combos,stepPct,annualBudgetUSD,startDate,endDate,top5};
+}
+
+// ================================================================
+//  UI: RUN STRATEGY OPTIMIZER
+// ================================================================
+async function runStrategyOptimizer(userResult){
+  const btn=$('btn-run-optimizer');
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spin" style="width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d0f14;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"></div>Optimizing…'}
+
+  const annualBudgetUSD=parseFloat($('opt-annual-usd')?.value)||6000;
+  const stepPct=parseInt($('opt-step')?.value)||10;
+
+  // Determine date range
+  let sd=$('start-date').value,ed=$('end-date').value;
+  const lookback=$('opt-lookback')?.value;
+  if(lookback&&lookback!=='same'){
+    const yrs=parseInt(lookback);
+    ed=new Date().toISOString().slice(0,10);
+    sd=new Date(new Date().setFullYear(new Date().getFullYear()-yrs)).toISOString().slice(0,10);
+  }
+
+  const optRes=$('optimizer-results');
+  if(optRes) optRes.innerHTML='<div style="color:var(--muted);font-family:\'IBM Plex Mono\',monospace;font-size:11px;padding:8px 0">Running optimization…</div>';
+
+  // Yield to browser so spinner shows
+  await new Promise(r=>setTimeout(r,30));
+
+  try{
+    const optResult=runStrategyOptimizerSync({
+      tickerData:userResult.assetResults.map(ar=>({sym:ar.sym,flag:ar.flag,type:ar.type,fiCur:ar.fiCur,pairs:ar.pairs})),
+      fxPairs:userResult.fxPairs,
+      annualBudgetUSD,startDate:sd,endDate:ed,stepPct,
+    });
+    renderStrategyResults(optResult,sd,ed);
+  }catch(e){
+    if(optRes) optRes.innerHTML=`<div class="ticker-error"><strong>Error:</strong> ${e.message}</div>`;
+    console.error(e);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='⚡ Find Optimal Strategy'}
+  }
+}
+
+// ================================================================
+//  RENDER STRATEGY OPTIMIZER RESULTS
+// ================================================================
+function renderStrategyResults(optResult, sd, ed){
+  const{results,globalBest,syms,stepPct,annualBudgetUSD,top5}=optResult;
+  const isUSD=state.viewCur==='USD';
+  const el=$('optimizer-results');
+  if(!el) return;
+
+  const n=syms.length;
+  const COLORS=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f'];
+  const years=(new Date(ed)-new Date(sd))/(365.25*86400000);
+
+  // ---- Winner banner ----
+  const gb=globalBest;
+  const gbRet=isUSD?gb.retUSD:gb.retBRL;
+  const gbFV=isUSD?gb.finalValUSD:gb.finalValBRL;
+  const gbInv=isUSD?gb.totalInvUSD:gb.totalInvBRL;
+
+  const winnerHtml=`
+    <div class="strat-banner">
+      <div class="strat-banner-title">🏆 Optimal DCA Strategy Found</div>
+      <div class="strat-banner-sub">
+        Invest <strong style="color:var(--lime)">${gb.label}</strong> on <strong style="color:var(--lime)">Tuesdays</strong> ·
+        Allocation: <strong style="color:var(--lime)">${syms.map((s,i)=>`${s.split('.')[0]} ${gb.combo[i]}%`).join(' · ')}</strong> ·
+        Lookback window: ${sd} → ${ed}
+      </div>
+    </div>
+
+    <div class="strat-winner-row">
+      <div class="strat-winner-card gold-card">
+        <div class="strat-gold-badge">Best</div>
+        <div class="strat-card-label">Total Return (${isUSD?'USD':'BRL'})</div>
+        <div class="strat-card-val pos">${fmtPct(gbRet)}</div>
+        <div class="strat-card-sub">${isUSD?fmtUSD(gbFV):fmtBRL(gbFV)} final · ${isUSD?fmtUSD(gbInv):fmtBRL(gbInv)} invested</div>
+      </div>
+      ${gb.cagrUSD!=null?`<div class="strat-winner-card gold-card">
+        <div class="strat-card-label">Ann. Return (CAGR)</div>
+        <div class="strat-card-val pos">${fmtPct(gb.cagrUSD)}</div>
+        <div class="strat-card-sub">Per year · ${fmt(years,1)}yr period</div>
+      </div>`:''}
+      <div class="strat-winner-card">
+        <div class="strat-card-label">Best Frequency</div>
+        <div class="strat-card-val" style="color:var(--sky)">${gb.label}</div>
+        <div class="strat-card-sub">Every ${gb.days} days · Tuesdays</div>
+      </div>
+      <div class="strat-winner-card">
+        <div class="strat-card-label">Per-Period Amount</div>
+        <div class="strat-card-val" style="color:var(--violet)">${fmtUSD(Math.round(annualBudgetUSD/(365/gb.days)))}</div>
+        <div class="strat-card-sub">${fmtUSD(annualBudgetUSD)}/yr · ${gb.purchases} purchases</div>
+      </div>
+      ${!isUSD?`<div class="strat-winner-card">
+        <div class="strat-card-label">Return USD</div>
+        <div class="strat-card-val ${cls(gb.retUSD)}" style="color:var(--sky)">${fmtPct(gb.retUSD)}</div>
+        <div class="strat-card-sub">${fmtUSD(gb.finalValUSD)}</div>
+      </div>`:''}
+    </div>
+
+    <div class="weight-bars">
+      ${syms.map((s,i)=>`
+        <div class="weight-bar-item">
+          <div class="weight-bar-name">${s}</div>
+          <div class="weight-bar-track"><div class="weight-bar-fill" style="width:${gb.combo[i]}%;background:${COLORS[i%COLORS.length]}"></div></div>
+          <div class="weight-bar-pct" style="color:${COLORS[i%COLORS.length]}">${gb.combo[i]}%</div>
+        </div>`).join('')}
+    </div>
+  `;
+
+  // ---- Top 5 strategies ----
+  const top5Html=`
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Top 5 Strategies</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin-bottom:18px">
+      ${(top5||[]).map((r,rank)=>{
+        const ret=isUSD?r.retUSD:r.retBRL;
+        const fv=isUSD?r.finalValUSD:r.finalValBRL;
+        return`<div class="strat-winner-card${rank===0?' gold-card':''}" style="animation-delay:${rank*.05}s">
+          ${rank===0?'<div class="strat-gold-badge">#1 Best</div>':'<div class="strat-gold-badge" style="background:var(--ink3);color:var(--muted2);border:1px solid var(--line)">#'+  (rank+1)+'</div>'}
+          <div class="strat-card-label">${r.freq} · ${syms.map((s,i)=>`${s.split('.')[0]}:${r.combo[i]}%`).join(' ')}</div>
+          <div class="strat-card-val ${cls(ret)}" style="${rank===0?'':'font-size:18px'}">${fmtPct(ret)}</div>
+          ${r.cagrUSD!=null?`<div class="strat-card-sub" style="color:var(--lime)">CAGR ${fmtPct(r.cagrUSD)}/yr</div>`:''}
+          <div class="strat-card-sub">${isUSD?fmtUSD(fv):fmtBRL(fv)} · ${r.purchases}x</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  // ---- Heat map: rows = weight combos, cols = frequencies ----
+  const allRets=[];
+  for(const r of results) for(const f of r.byFreq) if(f) allRets.push(isUSD?f.retUSD:f.retBRL);
+  const maxRet=Math.max(...allRets), minRet=Math.min(...allRets);
+
+  function cellClass(ret){
+    if(ret==null) return 'cell-bad';
+    if(ret<0) return 'cell-neg';
+    const pct=(ret-minRet)/Math.max(0.01,maxRet-minRet);
+    if(pct>0.85) return 'cell-best';
+    if(pct>0.6)  return 'cell-good';
+    if(pct>0.3)  return 'cell-ok';
+    return 'cell-bad';
+  }
+
+  const sortedResults=[...results].sort((a,b)=>{
+    const aMax=Math.max(...a.byFreq.map(f=>f?(isUSD?f.retUSD:f.retBRL):-Infinity));
+    const bMax=Math.max(...b.byFreq.map(f=>f?(isUSD?f.retUSD:f.retBRL):-Infinity));
+    return bMax-aMax;
+  });
+  const showRows=sortedResults.slice(0,Math.min(60,sortedResults.length));
+
+  const tableHtml=`
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600">
+      Return Matrix — All Allocations × Frequencies (${isUSD?'USD':'BRL'} total return %)
+    </div>
+    <div class="alloc-table-wrap">
+      <table class="alloc-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Allocation (${syms.map(s=>s.split('.')[0]).join(' / ')})</th>
+            ${STRAT_FREQS.map(f=>`<th>${f.label}<br><span style="color:var(--muted);font-size:8px">every ${f.days}d</span></th>`).join('')}
+            <th>Best</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${showRows.map(r=>{
+            const rets=r.byFreq.map(f=>f?(isUSD?f.retUSD:f.retBRL):null);
+            const cagrs=r.byFreq.map(f=>f?.cagrUSD);
+            const rowMax=Math.max(...rets.filter(v=>v!=null));
+            const wtLabel=r.combo.map(w=>`${w}%`).join(' / ');
+            const isBestRow=r.combo.join(',')===gb.combo.join(',');
+            return`<tr${isBestRow?' style="background:rgba(184,255,87,.04)"':''}>
+              <td style="${isBestRow?'color:var(--lime);font-weight:700':''}">
+                ${wtLabel}${isBestRow?' ★':''}
+              </td>
+              ${rets.map((ret,fi)=>{
+                const isBestCell=isBestRow&&STRAT_FREQS[fi].label===gb.label;
+                const cagr=cagrs[fi];
+                return`<td class="${ret!=null?(isBestCell?'cell-best':cellClass(ret)):'cell-bad'}"
+                  title="${STRAT_FREQS[fi].label} · ${r.combo.join('/')} · ${ret!=null?fmtPct(ret)+' (CAGR: '+fmtPct(cagr)+')':'n/a'}"
+                  onclick="showStratDetail(${JSON.stringify({combo:r.combo,freq:STRAT_FREQS[fi].label,days:STRAT_FREQS[fi].days,r:r.byFreq[fi]})})">
+                  ${ret!=null?fmt(ret,1)+'%':'—'}
+                  ${cagr!=null?`<div style="font-size:8px;opacity:.65">${fmt(cagr,1)}%/yr</div>`:''}
+                </td>`;
+              }).join('')}
+              <td class="${cellClass(rowMax)}" style="font-weight:600">${rowMax>-Infinity?fmt(rowMax,1)+'%':'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${sortedResults.length>60?`<div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:12px">Showing top 60 of ${sortedResults.length} combinations.</div>`:''}
+  `;
+
+  // ---- Best per frequency (bar chart) ----
+  const freqBests=STRAT_FREQS.map(freq=>{
+    let best=null;
+    for(const r of results){
+      const fi=r.byFreq.find(f=>f&&f.freq===freq.label);
+      if(fi){const ret=isUSD?fi.retUSD:fi.retBRL;if(!best||ret>best.ret)best={ret,label:freq.label,combo:r.combo,fi};}
+    }
+    return best;
+  }).filter(Boolean);
+
+  el.innerHTML=winnerHtml+top5Html+tableHtml+`
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Best Return by Frequency (${isUSD?'USD':'BRL'}) — Optimal Allocation Each</span>
+      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-freq-bar"></canvas></div>
+    </div>
+    <div id="strat-detail-drawer"></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;line-height:1.8">
+      ★ Best overall · Purchases always on Tuesdays · ${stepPct}% weight steps · Budget: ${fmtUSD(annualBudgetUSD)}/yr · ${allRets.length} strategies tested<br>
+      Click any cell in the matrix to see full strategy details · CAGR shown in sub-labels (annualized return)
+    </div>
+  `;
+
+  // Frequency bar chart
+  destroyChart('chart-freq-bar');
+  const barCtx=document.getElementById('chart-freq-bar')?.getContext('2d');
+  if(barCtx&&freqBests.length){
+    state.charts['chart-freq-bar']=new Chart(barCtx,{
+      type:'bar',
+      data:{
+        labels:freqBests.map(b=>b.label),
+        datasets:[{
+          label:'Best Return %',
+          data:freqBests.map(b=>b.ret),
+          backgroundColor:freqBests.map(b=>b.label===gb.label?'rgba(184,255,87,.85)':'rgba(77,184,255,.5)'),
+          borderColor:freqBests.map(b=>b.label===gb.label?'#b8ff57':'#4db8ff'),
+          borderWidth:1,borderRadius:4,
+        }]
+      },
+      options:{...CD,
+        plugins:{...CD.plugins,legend:{display:false},
+          tooltip:{...CD.plugins.tooltip,callbacks:{
+            label:ctx=>`Return: ${fmt(ctx.parsed.y,2)}%`,
+            afterLabel:ctx=>{
+              const b=freqBests[ctx.dataIndex];
+              if(!b) return '';
+              return[
+                `Allocation: ${syms.map((s,i)=>`${s.split('.')[0]}:${b.combo[i]}%`).join(' / ')}`,
+                b.fi?.cagrUSD!=null?`CAGR: ${fmt(b.fi.cagrUSD,2)}%/yr`:'',
+                `Invested: ${fmtUSD(b.fi?.totalInvUSD||0)}`,
+              ].filter(Boolean);
+            },
+          }}},
+        scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}
+      }
+    });
+  }
+}
+
+// ----------------------------------------------------------------
+//  showStratDetail — called from table cell onclick
+// ----------------------------------------------------------------
+function showStratDetail(data){
+  const{combo,freq,days,r}=data;
+  if(!r) return;
+  const isUSD=state.viewCur==='USD';
+  const ret=isUSD?r.retUSD:r.retBRL;
+  const fv=isUSD?r.finalValUSD:r.finalValBRL;
+  const ti=isUSD?r.totalInvUSD:r.totalInvBRL;
+  const syms=state.tickers.map(t=>t.sym);
+  const COLORS=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f'];
+  const perPeriod=r.purchases>0?(r.totalInvUSD/r.purchases):0;
+
+  const drawer=$('strat-detail-drawer');
+  if(!drawer) return;
+  drawer.innerHTML=`
+    <div class="strat-detail">
+      <div class="strat-detail-title">
+        📋 Strategy Detail — ${freq} · ${combo.join('/')} allocation
+        <button onclick="this.closest('.strat-detail').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div class="strat-detail-grid">
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Frequency</div>
+          <div class="strat-detail-v" style="color:var(--sky)">${freq}</div>
+        </div>
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Return (${isUSD?'USD':'BRL'})</div>
+          <div class="strat-detail-v ${cls(ret)}">${fmtPct(ret)}</div>
+        </div>
+        ${r.cagrUSD!=null?`<div class="strat-detail-kv">
+          <div class="strat-detail-k">CAGR (annualized)</div>
+          <div class="strat-detail-v ${cls(r.cagrUSD)}">${fmtPct(r.cagrUSD)}</div>
+        </div>`:''}
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Final Value</div>
+          <div class="strat-detail-v">${isUSD?fmtUSD(fv):fmtBRL(fv)}</div>
+        </div>
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Total Invested</div>
+          <div class="strat-detail-v" style="color:var(--violet)">${isUSD?fmtUSD(ti):fmtBRL(ti)}</div>
+        </div>
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Gain</div>
+          <div class="strat-detail-v ${cls(fv-ti)}">${isUSD?fmtUSD(fv-ti):fmtBRL(fv-ti)}</div>
+        </div>
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Purchases</div>
+          <div class="strat-detail-v" style="color:var(--muted2)">${r.purchases}</div>
+        </div>
+        <div class="strat-detail-kv">
+          <div class="strat-detail-k">Per Period</div>
+          <div class="strat-detail-v" style="color:var(--muted2)">${fmtUSD(perPeriod)}</div>
+        </div>
+        ${r.retBRL!=null&&isUSD?`<div class="strat-detail-kv">
+          <div class="strat-detail-k">Return BRL</div>
+          <div class="strat-detail-v ${cls(r.retBRL)}" style="color:var(--gold)">${fmtPct(r.retBRL)}</div>
+        </div>`:''}
+      </div>
+      <div class="weight-bars">
+        ${syms.map((sym,i)=>`
+          <div class="weight-bar-item">
+            <div class="weight-bar-name">${sym}</div>
+            <div class="weight-bar-track"><div class="weight-bar-fill" style="width:${combo[i]||0}%;background:${COLORS[i%COLORS.length]}"></div></div>
+            <div class="weight-bar-pct" style="color:${COLORS[i%COLORS.length]}">${combo[i]||0}%</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.7">
+        Invest ${fmtUSD(perPeriod)} every <strong>${days} days</strong> on <strong>Tuesdays</strong>
+      </div>
+    </div>
+  `;
+  drawer.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ================================================================
+//  TECHNICAL SIGNALS
+// ================================================================
+//  TECHNICAL SIGNALS
+// ================================================================
+function calcSignals(pairs){
+  if(!pairs||pairs.length<30) return null;
+  const vals=pairs.map(p=>p.price);
+  const n=vals.length;
+  const sma=(arr,k)=>arr.length<k?null:arr.slice(-k).reduce((a,b)=>a+b,0)/k;
+  const sma20=sma(vals,20),sma50=sma(vals,Math.min(50,n));
+  const last=vals[n-1];
+  const pd=Math.min(14,n-1);
+  let g=0,l=0;
+  for(let i=n-pd;i<n;i++){const d=vals[i]-vals[i-1];if(d>0)g+=d;else l+=Math.abs(d)}
+  const rsi=100-(100/(1+(g/pd)/((l/pd)||0.0001)));
+  const ww=Math.min(21,n);
+  const rets=vals.slice(-ww).slice(1).map((v,i)=>Math.log(v/vals[n-ww+i]));
+  const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const vol=Math.sqrt(rets.reduce((a,r)=>a+(r-mean)**2,0)/(rets.length-1||1)*252)*100;
+  const ret1m=n>=22?(last/vals[n-22]-1)*100:null;
+  const ret3m=n>=66?(last/vals[n-66]-1)*100:null;
+  const ret1y=n>=252?(last/vals[n-252]-1)*100:null;
+  const trendBull=sma20&&sma50?sma20>sma50:null;
+  const rs=rsi>70?"Overbought":rsi<30?"Oversold":"Neutral";
+  const ds=rsi<38?"Good Entry":rsi>65?"Caution":"Neutral";
+  const dc=rsi<38?"pill-bull":rsi>65?"pill-bear":"pill-neut";
+  const tl=trendBull===null?"—":trendBull?"Bullish":"Bearish";
+  const tc=trendBull===null?"pill-neut":trendBull?"pill-bull":"pill-bear";
+  return{last,sma20,sma50,rsi,vol,ret1m,ret3m,ret1y,rsiSignal:rs,dcaSignal:ds,dcaClass:dc,trendLabel:tl,trendClass:tc};
+}
+
+// ================================================================
+//  CHART HELPERS
+// ================================================================
+function destroyChart(k){if(state.charts[k]){state.charts[k].destroy();delete state.charts[k]}}
+const CD={
+  animation:{duration:500},responsive:true,maintainAspectRatio:false,
+  interaction:{mode:'index',intersect:false},
+  plugins:{
+    legend:{display:false},
+    tooltip:{backgroundColor:'rgba(22,26,35,.95)',borderColor:'#262d3d',borderWidth:1,padding:9,
+      titleFont:{family:"'IBM Plex Mono',monospace",size:10},
+      bodyFont:{family:"'IBM Plex Mono',monospace",size:11}}
+  },
+  scales:{
+    x:{ticks:{color:'#5a6480',font:{family:"'IBM Plex Mono',monospace",size:9},maxRotation:0},grid:{color:'#1e2330'},border:{color:'#262d3d'}},
+    y:{ticks:{color:'#5a6480',font:{family:"'IBM Plex Mono',monospace",size:9}},grid:{color:'#1e2330'},border:{color:'#262d3d'}}
+  }
+};
+function thinL(arr,max=10){const s=Math.max(1,Math.floor(arr.length/max));return arr.map((v,i)=>i%s===0?v.slice(0,7):'')}
+function fmtK(v){if(Math.abs(v)>=1e6)return(v/1e6).toFixed(1)+'M';if(Math.abs(v)>=1e3)return(v/1e3).toFixed(0)+'k';return fmt(v,0)}
+
+function makeAreaChart(id,labels,datasets){
+  destroyChart(id);
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx) return;
+  const isUSD=state.viewCur==='USD';
+  state.charts[id]=new Chart(ctx,{type:'line',data:{labels:thinL(labels),datasets},
+    options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,
+      callback:v=>isUSD?'$'+fmtK(v):'R$'+fmtK(v)}}}}});
+}
+
+function makeLineChart(id,labels,datasets,yFmt){
+  destroyChart(id);
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx) return;
+  state.charts[id]=new Chart(ctx,{type:'line',data:{labels:thinL(labels),datasets},
+    options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,
+      callback:yFmt||(v=>v)}}},
+    plugins:{...CD.plugins,legend:{display:true,
+      labels:{color:'#7a869e',font:{family:"'IBM Plex Mono',monospace",size:9},boxWidth:10,padding:12}}}}});
+}
+
+// ================================================================
+//  UI HELPERS
+// ================================================================
+function assetBadge(t){
+  if(t.type==='fi') return `<span class="asset-type-badge badge-fi">${t.fiCur==='BRL'?'🇧🇷':'🇺🇸'} FIXED</span>`;
+  if(t.flag==='💱') return `<span class="asset-type-badge badge-fx">FX</span>`;
+  return `<span class="asset-type-badge badge-equity">EQUITY</span>`;
+}
+
+// ================================================================
+//  RENDER HOLDINGS (with inline double-click edit)
+// ================================================================
+function renderHoldings(){
+  const el=$('holdings');
+  const totalWt=state.tickers.reduce((a,t)=>a+t.wt,0);
+  el.innerHTML=state.tickers.map((t,i)=>{
+    if(state.editingIdx===i){
+      const fopts=['🇺🇸','🇧🇷','💱'].map(f=>`<option value="${f}"${t.flag===f?' selected':''}>${f}</option>`).join('');
+      return `<div class="holding editing" data-idx="${i}">
+        <div class="holding-edit-row">
+          ${t.type==='fi'?`
+            <span style="font-size:11px;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;flex:1">${t.sym}</span>
+            <input class="holding-edit-input holding-edit-wt" type="number" value="${t.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
+            <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%</span>
+            <input class="holding-edit-input" style="width:66px" type="number" value="${t.fiRate}" step="0.1" min="0" data-field="fiRate" placeholder="Rate%">
+            <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%/yr</span>
+          `:`
+            <input class="holding-edit-input holding-edit-sym" type="text" value="${t.sym}" maxlength="20" data-field="sym" placeholder="SYM" style="text-transform:uppercase">
+            <input class="holding-edit-input holding-edit-wt" type="number" value="${t.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
+            <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%</span>
+            <select class="holding-edit-input holding-edit-flag" data-field="flag">${fopts}</select>
+          `}
+          <button class="btn-edit-save" data-idx="${i}">✓</button>
+          <button class="btn-edit-cancel" data-idx="${i}">✗</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="holding" data-idx="${i}" title="Double-click to edit">
+      <span class="holding-flag">${t.flag}</span>
+      <span class="holding-sym">${t.sym}</span>
+      ${assetBadge(t)}
+      <span class="holding-edit-hint">dbl-click</span>
+      <span class="holding-wt">${t.wt}%</span>
+      <button class="holding-rm" data-idx="${i}">×</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.holding-rm').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();state.tickers.splice(+btn.dataset.idx,1);state.editingIdx=null;renderHoldings()});
+  });
+  el.querySelectorAll('.holding:not(.editing)').forEach(row=>{
+    row.addEventListener('dblclick',()=>{state.editingIdx=+row.dataset.idx;renderHoldings();setTimeout(()=>el.querySelector('.holding.editing input')?.focus(),40)});
+  });
+  el.querySelectorAll('.btn-edit-save').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=+btn.dataset.idx;
+      el.querySelectorAll('[data-field]').forEach(inp=>{
+        const f=inp.dataset.field,t=state.tickers[idx];
+        if(f==='wt'||f==='fiRate') t[f]=parseFloat(inp.value)||t[f];
+        else if(f==='sym') t.sym=inp.value.trim().toUpperCase()||t.sym;
+        else t[f]=inp.value;
+      });
+      state.editingIdx=null;renderHoldings();
+    });
+  });
+  el.querySelectorAll('.btn-edit-cancel').forEach(btn=>{btn.addEventListener('click',()=>{state.editingIdx=null;renderHoldings()})});
+  el.querySelectorAll('.holding.editing input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')el.querySelector('.btn-edit-save')?.click();if(e.key==='Escape')el.querySelector('.btn-edit-cancel')?.click()});
+  });
+
+  const wtEl=$('wt-total');
+  wtEl.textContent=`Weights: ${totalWt}% ${totalWt===100?'✓':totalWt>100?'▲ over':'▼ under'}`;
+  wtEl.className='wt-total '+(totalWt===100?'wt-ok':totalWt>100?'wt-over':'wt-warn');
+}
+
+// ================================================================
+//  RENDER SIDEBAR
+// ================================================================
+function renderSidebar(){
+  // Presets
+  $('presets').innerHTML=PRESETS.map(p=>`<button class="preset" data-preset="${p.label}">${p.label}</button>`).join('');
+  $('presets').querySelectorAll('.preset').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const p=PRESETS.find(x=>x.label===btn.dataset.preset);
+      if(p){state.tickers=p.tickers.map(t=>({...t}));state.editingIdx=null;renderHoldings()}
+    });
+  });
+  // Period pills
+  $('period-pills').innerHTML=PERIODS.map(p=>`<button class="period-pill${state.period===p.label?' active':''}" data-period="${p.label}">${p.label}</button>`).join('');
+  $('period-pills').querySelectorAll('.period-pill').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      state.period=btn.dataset.period;
+      document.querySelectorAll('.period-pill').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const d=PERIODS.find(p=>p.label===state.period).days;
+      $('period-desc').textContent=`Invest every ${d} day${d===1?'':'s'}`;
+    });
+  });
+  // Type toggle
+  document.querySelectorAll('.type-pill').forEach(pill=>{
+    pill.addEventListener('click',()=>{
+      document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      state.activeAddType=pill.dataset.atype;
+      $('equity-add-row').style.display=state.activeAddType==='equity'?'block':'none';
+      $('fi-add-row').style.display=state.activeAddType==='fi'?'block':'none';
+    });
+  });
+  // FI presets
+  document.querySelectorAll('[data-fi-preset]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const[n,r,c]=btn.dataset.fiPreset.split(',');
+      $('fi-name').value=n;$('fi-rate').value=r;$('fi-cur').value=c;
+    });
+  });
+  $('end-date').value=new Date().toISOString().slice(0,10);
+}
+
+// ================================================================
+//  PANELS
+// ================================================================
+function showPanel(name){
+  ['empty','loading','results'].forEach(n=>{
+    const el=$(`panel-${n}`);
+    el.style.display=n===name?(name==='results'?'block':'flex'):'none';
+  });
+}
+
+function setLoading(tickers){
+  showPanel('loading');$('loading-ticker').textContent='FETCHING DATA';
+  const items=[
+    ...tickers.filter(t=>t.type!=='fi').map(t=>({id:t.sym,label:`${t.flag} ${t.sym}`})),
+    {id:'__fx',label:'💱 USD/BRL exchange rate'},
+    {id:'__calc',label:'⚙ Running DCA engine'},
+  ];
+  state._pi=items;state._pd=new Set();renderProgress();
+}
+function renderProgress(){
+  const el=$('progress-items');if(!el) return;
+  const items=state._pi||[],done=state._pd||new Set();
+  const fp=items.find(it=>!done.has(it.id));
+  el.innerHTML=items.map(it=>{
+    const d=done.has(it.id),a=fp?.id===it.id;
+    return`<div class="progress-item ${d?'done':a?'active':'wait'}"><div class="progress-dot"></div>${d?'✓ ':''}${it.label}</div>`;
+  }).join('');
+}
+function markProgress(id){if(state._pd)state._pd.add(id);renderProgress()}
+
+// ================================================================
+//  RENDER RESULTS
+// ================================================================
+function renderResults(result){
+  const{timeline,assetResults,fxPairs,totalInvUSD,totalInvBRL,
+        finalValUSD,finalValBRL,retUSD,retBRL,totalPurchases,fxChangePct,finalFX}=result;
+  const isUSD=state.viewCur==='USD';
+  const fv=isUSD?finalValUSD:finalValBRL,ti=isUSD?totalInvUSD:totalInvBRL;
+  const ret=isUSD?retUSD:retBRL,gain=fv-ti;
+
+  $('panel-title').textContent=state.tickers.map(t=>t.sym).join(' · ');
+  $('panel-sub').textContent=`${$('start-date').value} → ${$('end-date').value} · DCA every ${PERIODS.find(p=>p.label===state.period).days}d · ${totalPurchases} purchases`;
+
+  const html=`
+    <div class="stats-grid">
+      <div class="stat-card c-${ret>=0?'lime':'coral'}">
+        <div class="stat-label">Portfolio Value</div>
+        <div class="stat-value ${cls(ret)}">${isUSD?fmtUSD(fv):fmtBRL(fv)}</div>
+        <div class="stat-sub">Cost basis: ${isUSD?fmtUSD(ti):fmtBRL(ti)}</div>
+      </div>
+      <div class="stat-card c-${ret>=0?'lime':'coral'}">
+        <div class="stat-label">Total Return</div>
+        <div class="stat-value ${cls(ret)}">${fmtPct(ret)}</div>
+        <div class="stat-sub">Gain: ${isUSD?fmtUSD(gain):fmtBRL(gain)}</div>
+      </div>
+      <div class="stat-card c-sky">
+        <div class="stat-label">Return USD</div>
+        <div class="stat-value ${cls(retUSD)}" style="color:var(--sky)">${fmtPct(retUSD)}</div>
+        <div class="stat-sub">${fmtUSD(finalValUSD)} · invested ${fmtUSD(totalInvUSD)}</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-label">Return BRL</div>
+        <div class="stat-value ${cls(retBRL)}" style="color:var(--gold)">${fmtPct(retBRL)}</div>
+        <div class="stat-sub">${fmtBRL(finalValBRL)} · basis ${fmtBRL(totalInvBRL)}</div>
+      </div>
+    </div>
+
+    <div class="tabs-bar" id="tabs-bar">
+      <div class="tab active" data-tab="overview">Overview</div>
+      <div class="tab" data-tab="gains">Gains</div>
+      <div class="tab" data-tab="fx">FX · Currency</div>
+      <div class="tab" data-tab="optimizer">⚡ Optimizer</div>
+      <div class="tab" data-tab="signals">Signals</div>
+      <div class="tab" data-tab="table">History</div>
+      <div class="tab" data-tab="breakdown">Breakdown</div>
+    </div>
+
+    <div id="tab-overview">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Portfolio Value vs Amount Invested</span>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:var(--lime)"></span>Value</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>Cost Basis</span>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-main"></canvas></div>
+      </div>
+    </div>
+
+    <div id="tab-gains" style="display:none">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Unrealized Gain / Loss (${state.viewCur})</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-gains"></canvas></div>
+      </div>
+    </div>
+
+    <div id="tab-fx" style="display:none">
+      <div class="fx-badges">
+        <div class="fx-badge"><div class="fx-badge-label">Current FX</div><div class="fx-badge-value" style="color:var(--gold)">R$ ${fmt(finalFX,4)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">FX Change</div><div class="fx-badge-value" style="color:${clr(fxChangePct)}">${fmtPct(fxChangePct)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">FX Impact on BRL Return</div><div class="fx-badge-value" style="color:${clr(retBRL-retUSD)}">${fmtPct(retBRL-retUSD)}</div></div>
+        <div class="fx-badge"><div class="fx-badge-label">Start FX</div><div class="fx-badge-value" style="color:var(--muted2)">R$ ${fmt(result.startFX,4)}</div></div>
+      </div>
+      <div class="warn-box" style="margin-bottom:12px">
+        ℹ BRL cost basis uses the actual historical FX rate on each purchase date. BRL return = (current USD value × current FX) / (Σ USD invested × FX at purchase date) − 1.
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><span class="chart-card-title">USD / BRL Exchange Rate</span></div>
+        <div class="chart-wrap"><canvas id="chart-fx"></canvas></div>
+      </div>
+    </div>
+
+    <div id="tab-optimizer" style="display:none">
+      <div id="optimizer-content">
+        <div class="strat-settings">
+          <div class="strat-settings-title">⚡ Strategy Optimizer Settings</div>
+          <div class="strat-field-row">
+            <div class="field">
+              <label>Annual Budget (USD)</label>
+              <input type="number" id="opt-annual-usd" value="${fmt(totalInvUSD/(((new Date($('end-date').value)-new Date($('start-date').value))/86400000)/365),0).replace(/,/g,'')}" min="100" step="100" placeholder="e.g. 12000">
+            </div>
+            <div class="field">
+              <label>Lookback Window</label>
+              <select id="opt-lookback">
+                <option value="same">Same as simulation</option>
+                <option value="1Y">Last 1 Year</option>
+                <option value="3Y">Last 3 Years</option>
+                <option value="5Y">Last 5 Years</option>
+                <option value="10Y">Last 10 Years</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Weight Step Size</label>
+              <select id="opt-step">
+                <option value="10">10% steps (faster)</option>
+                <option value="5">5% steps (precise)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button class="btn-run" style="max-width:300px;margin-bottom:18px;font-size:17px;padding:11px" id="btn-run-optimizer">⚡ Find Optimal Strategy</button>
+        <div id="optimizer-results"></div>
+      </div>
+    </div>
+
+    <div id="tab-signals" style="display:none">
+      <div class="signals-grid" id="signals-grid"></div>
+    </div>
+
+    <div id="tab-table" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Value USD</th><th>Value BRL</th><th>Cost Basis USD</th><th>Cost Basis BRL</th><th>Gain USD</th><th>Ret %</th><th>FX</th></tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-breakdown" style="display:none">
+      <div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--line)">
+        <table>
+          <thead><tr><th>Asset</th><th>Type</th><th>Weight</th><th>Units</th><th>Cost Basis USD</th><th>Final Value USD</th><th>Return %</th><th>Purchases</th></tr></thead>
+          <tbody id="breakdown-body"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  $('panel-results').innerHTML=html;showPanel('results');
+
+  // Tab switching
+  document.querySelectorAll('#tabs-bar .tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('#tabs-bar .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      ['overview','gains','fx','optimizer','signals','table','breakdown'].forEach(n=>
+        document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
+      );
+      if(tab.dataset.tab==='overview') drawMainChart(result);
+      if(tab.dataset.tab==='gains') drawGainChart(result);
+      if(tab.dataset.tab==='fx') drawFXChart(result);
+      if(tab.dataset.tab==='signals') renderSignals(result);
+      if(tab.dataset.tab==='table') renderTable(result);
+      if(tab.dataset.tab==='breakdown') renderBreakdown(result);
+      // optimizer: wire up button freshly each time tab is shown
+      if(tab.dataset.tab==='optimizer'){
+        const b=$('btn-run-optimizer');
+        if(b&&!b._wired){b._wired=true;b.addEventListener('click',()=>runStrategyOptimizer(result));}
+      }
+    });
+  });
+
+  drawMainChart(result);
+}
+
+// ================================================================
+//  DRAW CHARTS
+// ================================================================
+function drawMainChart(result){
+  const isUSD=state.viewCur==='USD',tl=result.timeline;
+  const canvas=document.getElementById('chart-main');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const g1=ctx.createLinearGradient(0,0,0,250);g1.addColorStop(0,'rgba(184,255,87,.22)');g1.addColorStop(1,'rgba(184,255,87,0)');
+  const g2=ctx.createLinearGradient(0,0,0,250);g2.addColorStop(0,'rgba(167,139,250,.18)');g2.addColorStop(1,'rgba(167,139,250,0)');
+  makeAreaChart('chart-main',tl.map(d=>d.date),[
+    {label:'Portfolio Value',data:tl.map(d=>isUSD?d.valueUSD:d.valueBRL),borderColor:'#b8ff57',backgroundColor:g1,borderWidth:2,pointRadius:0,tension:.3,fill:true},
+    {label:'Cost Basis',data:tl.map(d=>isUSD?d.investedUSD:d.investedBRL),borderColor:'#a78bfa',backgroundColor:g2,borderWidth:1.5,pointRadius:0,tension:.3,fill:true,borderDash:[5,3]},
+  ]);
+}
+function drawGainChart(result){
+  const isUSD=state.viewCur==='USD',tl=result.timeline;
+  const canvas=document.getElementById('chart-gains');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,250);g.addColorStop(0,'rgba(184,255,87,.28)');g.addColorStop(1,'rgba(184,255,87,0)');
+  makeAreaChart('chart-gains',tl.map(d=>d.date),[
+    {label:'Gain',data:tl.map(d=>isUSD?d.gainUSD:d.gainBRL),borderColor:'#b8ff57',backgroundColor:g,borderWidth:2,pointRadius:0,tension:.3,fill:true},
+  ]);
+}
+function drawFXChart(result){
+  const{fxPairs}=result;
+  const canvas=document.getElementById('chart-fx');if(!canvas)return;
+  destroyChart('chart-fx');
+  const ctx=canvas.getContext('2d');
+  state.charts['chart-fx']=new Chart(ctx,{type:'line',
+    data:{labels:thinL(fxPairs.map(p=>p.date)),datasets:[{
+      label:'USD/BRL',data:fxPairs.map(p=>p.price),borderColor:'#f5c842',
+      backgroundColor:'rgba(245,200,66,.1)',borderWidth:2,pointRadius:0,tension:.3,fill:true,
+    }]},
+    options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>'R$'+fmt(v,2)}}},
+      plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{label:ctx=>`R$ ${fmt(ctx.parsed.y,4)}`}}}}
+  });
+}
+
+// ================================================================
+//  RENDER TABS
+// ================================================================
+function renderSignals(result){
+  const grid=$('signals-grid');if(!grid||grid.dataset.rendered)return;
+  grid.dataset.rendered='1';
+  grid.innerHTML=result.assetResults.map((ar,i)=>{
+    const delay=(i*.08).toFixed(2);
+    if(ar.type==='fi'){
+      const t=state.tickers.find(t=>t.sym===ar.sym&&t.type==='fi');
+      const rate=t?.fiRate||0;
+      const tr=ar.pairs.length>=2?(ar.pairs[ar.pairs.length-1].price/ar.pairs[0].price-1)*100:0;
+      return`<div class="signal-card" style="animation-delay:${delay}s">
+        <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
+        <div class="signal-row"><span class="signal-row-label">Type</span><span class="signal-row-val" style="color:var(--gold)">Fixed Income</span></div>
+        <div class="signal-row"><span class="signal-row-label">Annual Rate</span><span class="signal-row-val" style="color:var(--gold)">${fmt(rate,2)}% p.a.</span></div>
+        <div class="signal-row"><span class="signal-row-label">Currency</span><span class="signal-row-val">${ar.fiCur==='BRL'?'🇧🇷 BRL':'🇺🇸 USD'}</span></div>
+        <div class="signal-row"><span class="signal-row-label">Period Return</span><span class="signal-row-val ${cls(tr)}">${fmtPct(tr)}</span></div>
+        <div class="signal-row"><span class="signal-row-label">Volatility</span><span class="signal-row-val" style="color:var(--lime)">~0% (synthetic)</span></div>
+        <div class="signal-row" style="border:none"><span class="signal-row-label">DCA Signal</span><span class="signal-row-val"><span class="pill pill-bull">Always Invest</span></span></div>
+      </div>`;
+    }
+    const sig=calcSignals(ar.pairs);
+    if(!sig)return`<div class="signal-card" style="animation-delay:${delay}s">
+      <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
+      <div style="color:var(--muted);font-size:12px;padding:8px 0">Need 30+ days of data for signals</div>
+    </div>`;
+    return`<div class="signal-card" style="animation-delay:${delay}s">
+      <div class="signal-ticker">${ar.flag} ${ar.sym}</div>
+      <div class="signal-row"><span class="signal-row-label">Last Price</span><span class="signal-row-val">${fmt(sig.last,2)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">SMA 20/50</span><span class="signal-row-val" style="color:var(--muted2)">${fmt(sig.sma20,2)} / ${fmt(sig.sma50,2)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">Trend</span><span class="signal-row-val"><span class="pill ${sig.trendClass}">${sig.trendLabel}</span></span></div>
+      <div class="signal-row"><span class="signal-row-label">RSI (14)</span><span class="signal-row-val" style="color:${sig.rsi>70?'var(--coral)':sig.rsi<30?'var(--lime)':'var(--gold)'}">${fmt(sig.rsi,1)}</span></div>
+      <div class="signal-row"><span class="signal-row-label">RSI Signal</span><span class="signal-row-val"><span class="pill ${sig.rsi>70?'pill-bear':sig.rsi<30?'pill-bull':'pill-neut'}">${sig.rsiSignal}</span></span></div>
+      <div class="signal-row"><span class="signal-row-label">Ann. Vol</span><span class="signal-row-val">${fmt(sig.vol,1)}%</span></div>
+      <div class="signal-row"><span class="signal-row-label">1M / 3M</span><span class="signal-row-val"><span style="color:${clr(sig.ret1m)}">${fmtPct(sig.ret1m)}</span> / <span style="color:${clr(sig.ret3m)}">${fmtPct(sig.ret3m)}</span></span></div>
+      ${sig.ret1y!=null?`<div class="signal-row"><span class="signal-row-label">1Y Return</span><span class="signal-row-val" style="color:${clr(sig.ret1y)}">${fmtPct(sig.ret1y)}</span></div>`:''}
+      <div class="signal-row" style="border:none"><span class="signal-row-label">DCA Signal</span><span class="signal-row-val"><span class="pill ${sig.dcaClass}">${sig.dcaSignal}</span></span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable(result){
+  const el=$('table-body');if(!el||el.dataset.rendered)return;el.dataset.rendered='1';
+  const{timeline}=result;
+  const step=Math.max(1,Math.floor(timeline.length/80));
+  el.innerHTML=timeline.filter((_,i)=>i%step===0||i===timeline.length-1).map(row=>{
+    const ret=row.investedUSD>0?(row.valueUSD/row.investedUSD-1)*100:0;
+    return`<tr>
+      <td>${row.date}</td>
+      <td class="td-sky">${fmtUSD(row.valueUSD)}</td><td class="td-gold">${fmtBRL(row.valueBRL)}</td>
+      <td style="color:var(--muted2)">${fmtUSD(row.investedUSD)}</td>
+      <td style="color:var(--muted2)">${fmtBRL(row.investedBRL)}</td>
+      <td class="${row.gainUSD>=0?'td-pos':'td-neg'}">${fmtUSD(row.gainUSD)}</td>
+      <td class="${ret>=0?'td-pos':'td-neg'}">${fmtPct(ret)}</td>
+      <td style="color:var(--muted2)">R$${fmt(row.fx,2)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderBreakdown(result){
+  const el=$('breakdown-body');if(!el||el.dataset.rendered)return;el.dataset.rendered='1';
+  el.innerHTML=result.assetResults.map(ar=>{
+    const lastP=ar.pairs.length?ar.pairs[ar.pairs.length-1].price:0;
+    const fxFinal=result.fxPairs.length?result.fxPairs[result.fxPairs.length-1].price:5.2;
+    const fv=(ar.type==='fi'&&ar.fiCur==='BRL')?(ar.sharesAccum*lastP)/fxFinal:ar.sharesAccum*lastP;
+    const ret=ar.totalInvestedUSD>0?(fv/ar.totalInvestedUSD-1)*100:0;
+    const badge=ar.type==='fi'?`<span class="asset-type-badge badge-fi">FIXED</span>`:`<span class="asset-type-badge badge-equity">EQUITY</span>`;
+    return`<tr>
+      <td style="color:var(--head);font-weight:600">${ar.flag} ${ar.sym}</td>
+      <td>${badge}</td>
+      <td style="color:var(--lime)">${fmt(ar.wf*100,1)}%</td>
+      <td>${fmt(ar.sharesAccum,4)}</td>
+      <td style="color:var(--violet)">${fmtUSD(ar.totalInvestedUSD)}</td>
+      <td class="${ret>=0?'td-pos':'td-neg'}">${fmtUSD(fv)}</td>
+      <td class="${ret>=0?'td-pos':'td-neg'}">${fmtPct(ret)}</td>
+      <td style="color:var(--muted2)">${ar.events.length}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ================================================================
+//  CURRENCY SWITCH
+// ================================================================
+function setCurrency(cur){
+  state.viewCur=cur;
+  document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.dataset.cur===cur));
+  if(!state.result)return;
+  const{finalValUSD,finalValBRL,totalInvUSD,totalInvBRL,retUSD,retBRL}=state.result;
+  const isUSD=cur==='USD';
+  const fv=isUSD?finalValUSD:finalValBRL,ti=isUSD?totalInvUSD:totalInvBRL,ret=isUSD?retUSD:retBRL;
+  const cards=document.querySelectorAll('.stat-card');
+  if(cards[0]){cards[0].querySelector('.stat-value').textContent=isUSD?fmtUSD(fv):fmtBRL(fv);cards[0].querySelector('.stat-sub').textContent=`Cost basis: ${isUSD?fmtUSD(ti):fmtBRL(ti)}`}
+  if(cards[1]){cards[1].querySelector('.stat-value').textContent=fmtPct(ret);cards[1].querySelector('.stat-sub').textContent=`Gain: ${isUSD?fmtUSD(fv-ti):fmtBRL(fv-ti)}`}
+  const at=document.querySelector('#tabs-bar .tab.active')?.dataset.tab;
+  if(at==='overview') drawMainChart(state.result);
+  if(at==='gains') drawGainChart(state.result);
+}
+
+// ================================================================
+//  MAIN SIMULATION RUN
+// ================================================================
+async function runSimulation(){
+  const tickers=state.tickers;
+  if(!tickers.length){showError("Add at least one asset.");return}
+  const startDate=$('start-date').value,endDate=$('end-date').value;
+  const amtUSD=parseFloat($('amt-usd').value)||0,amtBRL=parseFloat($('amt-brl').value)||0;
+  if(!startDate||!endDate){showError("Set start and end dates.");return}
+  if(amtUSD===0&&amtBRL===0){showError("Enter an investment amount.");return}
+  if(new Date(startDate)>=new Date(endDate)){showError("Start date must be before end date.");return}
+
+  hideError();setLoading(tickers);
+  $('btn-run').disabled=true;
+  $('btn-run').innerHTML='<div class="spin"></div><span>Fetching…</span>';
+
+  const fetchErrors=[];
+
+  try{
+    const totalWt=tickers.reduce((a,t)=>a+t.wt,0)||100;
+    const weights=tickers.map(t=>t.wt/totalWt);
+    const periodDays=PERIODS.find(p=>p.label===state.period).days;
+    const investDates=buildInvestDates(startDate,endDate,periodDays);
+
+    const tickerData=[];
+    for(const t of tickers){
+      $('loading-ticker').textContent=`LOADING ${t.sym}`;
+      let pairs;
+      if(t.type==='fi'){
+        pairs=generateFIPairs(startDate,endDate,t.fiRate||10);
+      } else {
+        try{
+          pairs=await fetchYahoo(t.sym,startDate,endDate);
+        }catch(e){
+          fetchErrors.push({sym:t.sym,msg:e.message});
+          // Skip this ticker but continue with others
+          continue;
+        }
+      }
+      markProgress(t.sym);
+      tickerData.push({sym:t.sym,flag:t.flag,type:t.type||'equity',fiCur:t.fiCur,pairs});
+    }
+
+    // If all equity tickers failed, abort
+    const equityFailed=tickers.filter(t=>t.type!=='fi').every(t=>fetchErrors.some(e=>e.sym===t.sym));
+    if(equityFailed&&tickers.every(t=>t.type!=='fi')){
+      showPanel('empty');
+      const errHtml=fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>');
+      showError(`All tickers failed to load:\n${fetchErrors.map(e=>`${e.sym}: ${e.msg}`).join('\n')}`);
+      return;
+    }
+
+    $('loading-ticker').textContent='LOADING FX DATA';
+    let fxPairs=[];
+    try{fxPairs=await fetchYahoo('BRL=X',startDate,endDate)}catch(e){
+      try{fxPairs=await fetchYahoo('USDBRL=X',startDate,endDate)}catch(e2){}
+    }
+    if(!fxPairs.length){
+      const d=new Date(startDate),e=new Date(endDate);
+      while(d<=e){fxPairs.push({date:d.toISOString().slice(0,10),price:5.0});d.setDate(d.getDate()+7)}
+    }
+    markProgress('__fx');
+
+    $('loading-ticker').textContent='CALCULATING';
+    const result=runDCA({tickerData,fxPairs,investDates,amtUSD,amtBRL,weights});
+    markProgress('__calc');
+    state.result=result;
+
+    setTimeout(()=>{
+      renderResults(result);
+      // Show per-ticker fetch errors as non-fatal warnings inside results
+      if(fetchErrors.length){
+        const errBox=document.createElement('div');
+        errBox.className='ticker-error';
+        errBox.innerHTML=`<strong>⚠ Some tickers could not be fetched and were skipped:</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg}`).join('<br>')}`;
+        $('panel-results').prepend(errBox);
+      }
+    },200);
+
+  }catch(err){
+    showPanel('empty');
+    showError(err.message||"An error occurred.");
+    console.error(err);
+  }finally{
+    $('btn-run').disabled=false;
+    $('btn-run').innerHTML='RUN SIMULATION';
+  }
+}
+
+function showError(msg){const e=$('error-msg');e.innerHTML=msg.replace(/\n/g,'<br>');e.style.display='block'}
+function hideError(){$('error-msg').style.display='none'}
+
+// ================================================================
+//  EVENT LISTENERS
+// ================================================================
+$('btn-run').addEventListener('click',runSimulation);
+
+$('btn-add').addEventListener('click',()=>{
+  const sym=$('new-sym').value.trim().toUpperCase();
+  const wt=parseFloat($('new-wt').value)||10;
+  const flag=$('new-flag').value.split(' ')[0];
+  if(!sym)return;
+  if($('new-sym').classList.contains('input-invalid')){
+    if(!confirm(`"${sym}" could not be verified on Yahoo Finance.\nAdd it anyway?`))return;
+  }
+  state.tickers.push({sym,wt,flag,type:'equity'});
+  state.editingIdx=null;renderHoldings();
+  $('new-sym').value='';setValState('idle');
+});
+$('new-sym').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-add').click()});
+$('new-sym').addEventListener('input',e=>scheduleValidation(e.target.value.trim().toUpperCase()));
+
+$('btn-add-fi').addEventListener('click',()=>{
+  const name=$('fi-name').value.trim()||'Fixed Income';
+  const rate=parseFloat($('fi-rate').value)||10;
+  const cur=$('fi-cur').value;
+  const wt=parseFloat($('fi-wt').value)||10;
+  state.tickers.push({sym:name,wt,flag:cur==='BRL'?'🇧🇷':'🇺🇸',type:'fi',fiRate:rate,fiCur:cur});
+  state.editingIdx=null;renderHoldings();$('fi-name').value='';
+});
+
+document.querySelectorAll('.cur-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>setCurrency(btn.dataset.cur));
+});
+
+document.addEventListener('click',e=>{
+  if(state.editingIdx===null)return;
+  if(!e.target.closest('.holding.editing')&&!e.target.closest('.holding[data-idx]')){
+    state.editingIdx=null;renderHoldings();
+  }
+});
+
+// ================================================================
+//  INIT
+// ================================================================
+renderSidebar();
+renderHoldings();
+</script>
+</body>
+</html>
