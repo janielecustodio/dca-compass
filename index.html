@@ -7,8 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -185,8 +183,15 @@ select option{background:var(--ink3)}
 .chart-legend{display:flex;gap:12px;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
 .legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.chart-wrap{position:relative;height:250px}
+.chart-wrap{position:relative;height:250px;cursor:crosshair}
 @media(max-width:600px){.chart-wrap{height:190px}}
+/* Range-drag overlay */
+.chart-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.range-badge{position:absolute;top:6px;background:rgba(22,26,35,.96);border:1px solid var(--line2);border-radius:6px;padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;pointer-events:none;z-index:10;white-space:nowrap;transform:translateX(-50%);box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.range-badge .rb-delta{font-size:13px;font-weight:600;letter-spacing:-.01em}
+.range-badge .rb-dates{font-size:9px;color:var(--muted2);margin-top:2px}
+.range-badge.pos .rb-delta{color:var(--lime)}
+.range-badge.neg .rb-delta{color:var(--coral)}
 
 /* FX */
 .fx-badges{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
@@ -2209,11 +2214,7 @@ const CD={
     legend:{display:false},
     tooltip:{backgroundColor:'rgba(22,26,35,.95)',borderColor:'#262d3d',borderWidth:1,padding:9,
       titleFont:{family:"'IBM Plex Mono',monospace",size:10},
-      bodyFont:{family:"'IBM Plex Mono',monospace",size:11}},
-    zoom:{
-      zoom:{drag:{enabled:true,backgroundColor:'rgba(184,255,87,0.1)',borderColor:'rgba(184,255,87,0.4)',borderWidth:1},mode:'x',onZoomComplete:()=>{}},
-      pan:{enabled:false},
-    }
+      bodyFont:{family:"'IBM Plex Mono',monospace",size:11}}
   },
   scales:{
     x:{ticks:{color:'#5a6480',font:{family:"'IBM Plex Mono',monospace",size:9},maxRotation:0},grid:{color:'#1e2330'},border:{color:'#262d3d'}},
@@ -2244,23 +2245,170 @@ function makeLineChart(id,labels,datasets,yFmt){
       labels:{color:'#7a869e',font:{family:"'IBM Plex Mono',monospace",size:9},boxWidth:10,padding:12}}}}});
 }
 
-function addZoomReset(chartId){
-  const wrap=document.getElementById(chartId)?.parentElement;
-  if(!wrap)return;
-  let resetBtn=wrap.querySelector('.zoom-reset-btn');
-  if(!resetBtn){
-    resetBtn=document.createElement('button');
-    resetBtn.className='zoom-reset-btn';
-    resetBtn.style.cssText='position:absolute;top:8px;right:8px;background:var(--line2);border:1px solid var(--line2);border-radius:4px;color:var(--lime);padding:3px 8px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;cursor:pointer;display:none;z-index:10';
-    resetBtn.textContent='↺ Reset';
-    wrap.style.position='relative';
-    wrap.appendChild(resetBtn);
-    resetBtn.addEventListener('click',()=>{state.charts[chartId]?.resetZoom();resetBtn.style.display='none';});
+// ================================================================
+//  RANGE DRAG — Google Finance-style select & show delta
+// ================================================================
+const _rangeDrags={};
+function attachRangeDrag(canvasId, dataSeriesGetter, valueFmtFn){
+  // dataSeriesGetter() returns {labels:string[], values:number[]}
+  // valueFmtFn(val, delta, pct) returns formatted badge text
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const wrap=canvas.parentElement;
+  if(!wrap) return;
+
+  // Remove stale drag instance
+  if(_rangeDrags[canvasId]) _rangeDrags[canvasId].destroy();
+
+  // Overlay canvas
+  let overlay=wrap.querySelector('.chart-overlay-canvas');
+  if(!overlay){
+    overlay=document.createElement('canvas');
+    overlay.className='chart-overlay-canvas';
+    overlay.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:all;z-index:5';
+    wrap.appendChild(overlay);
   }
-  if(state.charts[chartId]){
-    state.charts[chartId].options.plugins.zoom.zoom.onZoomComplete=()=>{resetBtn.style.display='block';};
-    state.charts[chartId].update('none');
+
+  // Badge element
+  let badge=wrap.querySelector('.range-badge');
+  if(!badge){
+    badge=document.createElement('div');
+    badge.className='range-badge';
+    badge.style.display='none';
+    wrap.appendChild(badge);
   }
+
+  let dragging=false, startX=0, endX=0;
+
+  function getCanvasX(e){
+    const r=overlay.getBoundingClientRect();
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    return Math.max(0,Math.min(overlay.width,((clientX-r.left)/r.width)*overlay.width));
+  }
+
+  function getChartArea(){
+    const ch=state.charts[canvasId];
+    if(!ch) return null;
+    return ch.chartArea; // {left,right,top,bottom}
+  }
+
+  function xToDataIndex(px){
+    const ch=state.charts[canvasId];
+    if(!ch) return 0;
+    const ca=ch.chartArea;
+    const data=ch.data.labels;
+    const n=data.length;
+    if(n===0) return 0;
+    const ratio=(px-ca.left)/(ca.right-ca.left);
+    return Math.max(0,Math.min(n-1,Math.round(ratio*(n-1))));
+  }
+
+  function drawOverlay(x0,x1){
+    const dpr=window.devicePixelRatio||1;
+    overlay.width=overlay.offsetWidth*dpr;
+    overlay.height=overlay.offsetHeight*dpr;
+    const ctx2=overlay.getContext('2d');
+    ctx2.clearRect(0,0,overlay.width,overlay.height);
+    const ca=getChartArea();
+    if(!ca) return;
+    const scale=dpr;
+    const lx=Math.min(x0,x1)*scale,rx=Math.max(x0,x1)*scale;
+    const top=ca.top*scale,bottom=ca.bottom*scale;
+
+    // Shaded selection region
+    ctx2.fillStyle='rgba(77,184,255,0.10)';
+    ctx2.fillRect(lx,top,rx-lx,bottom-top);
+
+    // Left dashed vertical line
+    ctx2.strokeStyle='rgba(77,184,255,0.7)';
+    ctx2.lineWidth=1*scale;
+    ctx2.setLineDash([4*scale,3*scale]);
+    ctx2.beginPath();ctx2.moveTo(lx,top);ctx2.lineTo(lx,bottom);ctx2.stroke();
+
+    // Right dashed vertical line
+    ctx2.beginPath();ctx2.moveTo(rx,top);ctx2.lineTo(rx,bottom);ctx2.stroke();
+    ctx2.setLineDash([]);
+  }
+
+  function clearOverlay(){
+    if(!overlay.width) return;
+    overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);
+    badge.style.display='none';
+  }
+
+  function showBadge(x0,x1){
+    const {labels,values}=dataSeriesGetter()||{labels:[],values:[]};
+    if(!labels.length) return;
+    const i0=xToDataIndex(Math.min(x0,x1));
+    const i1=xToDataIndex(Math.max(x0,x1));
+    if(i0===i1) return;
+    const v0=values[i0], v1=values[i1];
+    if(v0==null||v1==null) return;
+    const delta=v1-v0;
+    const pct=v0!==0?(delta/Math.abs(v0))*100:0;
+    const isPos=delta>=0;
+    const midX=((Math.min(x0,x1)+Math.max(x0,x1))/2);
+    const midXPct=(midX/overlay.offsetWidth)*100;
+    const d0=labels[i0]||'',d1=labels[i1]||'';
+    badge.className='range-badge '+(isPos?'pos':'neg');
+    badge.innerHTML=`<div class="rb-delta">${isPos?'▲':'▼'} ${valueFmtFn(delta,pct)}</div><div class="rb-dates">${d0} → ${d1}</div>`;
+    badge.style.display='block';
+    badge.style.left=midXPct+'%';
+    badge.style.top='6px';
+  }
+
+  function onDown(e){
+    if(e.button!=null&&e.button!==0) return;
+    e.preventDefault();
+    dragging=true;
+    startX=endX=getCanvasX(e);
+    clearOverlay();
+    overlay.style.cursor='col-resize';
+  }
+  function onMove(e){
+    if(!dragging) return;
+    e.preventDefault();
+    endX=getCanvasX(e);
+    if(Math.abs(endX-startX)<4) return;
+    drawOverlay(startX,endX);
+  }
+  function onUp(e){
+    if(!dragging) return;
+    dragging=false;
+    overlay.style.cursor='crosshair';
+    endX=getCanvasX(e.changedTouches?{clientX:e.changedTouches[0].clientX}:e);
+    if(Math.abs(endX-startX)<8){clearOverlay();return;}
+    drawOverlay(startX,endX);
+    showBadge(startX,endX);
+  }
+  function onClickOut(e){
+    if(!e.target.closest('.chart-overlay-canvas')&&!e.target.closest('.range-badge')){
+      clearOverlay();
+    }
+  }
+
+  overlay.addEventListener('mousedown',onDown);
+  overlay.addEventListener('mousemove',onMove);
+  overlay.addEventListener('mouseup',onUp);
+  overlay.addEventListener('touchstart',onDown,{passive:false});
+  overlay.addEventListener('touchmove',onMove,{passive:false});
+  overlay.addEventListener('touchend',onUp,{passive:false});
+  document.addEventListener('click',onClickOut);
+
+  const instance={
+    destroy(){
+      overlay.removeEventListener('mousedown',onDown);
+      overlay.removeEventListener('mousemove',onMove);
+      overlay.removeEventListener('mouseup',onUp);
+      overlay.removeEventListener('touchstart',onDown);
+      overlay.removeEventListener('touchmove',onMove);
+      overlay.removeEventListener('touchend',onUp);
+      document.removeEventListener('click',onClickOut);
+      clearOverlay();
+    }
+  };
+  _rangeDrags[canvasId]=instance;
+  return instance;
 }
 
 // ================================================================
@@ -2578,9 +2726,9 @@ function renderResults(result){
       ['overview','gains','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
         document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
       );
-      if(tab.dataset.tab==='overview'){drawMainChart(result);addZoomReset('chart-main');}
-      if(tab.dataset.tab==='gains'){drawGainChart(result);addZoomReset('chart-gains');}
-      if(tab.dataset.tab==='fx'){drawFXChart(result);addZoomReset('chart-fx');}
+      if(tab.dataset.tab==='overview') drawMainChart(result);
+      if(tab.dataset.tab==='gains') drawGainChart(result);
+      if(tab.dataset.tab==='fx') drawFXChart(result);
       if(tab.dataset.tab==='signals') renderSignals(result);
       if(tab.dataset.tab==='table') renderTable(result);
       if(tab.dataset.tab==='breakdown') renderBreakdown(result);
@@ -2594,7 +2742,6 @@ function renderResults(result){
   });
 
   drawMainChart(result);
-  addZoomReset('chart-main');
 }
 
 // ================================================================
@@ -2617,6 +2764,16 @@ function drawMainChart(result){
     datasets.push({label:'SPY (benchmark)',data:bmData,borderColor:'#4db8ff',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3,fill:false,borderDash:[3,3]});
   }
   makeAreaChart('chart-main',tl.map(d=>d.date),datasets);
+  // Attach range-drag: shows portfolio value delta
+  const isUSDm=state.viewCur==='USD';
+  attachRangeDrag('chart-main',
+    ()=>({labels:tl.map(d=>d.date), values:tl.map(d=>isUSDm?d.valueUSD:d.valueBRL)}),
+    (delta,pct)=>{
+      const sign=delta>=0?'+':'';
+      const cur=isUSDm?'$':'R$';
+      return`${sign}${cur}${fmtK(Math.abs(delta))} (${sign}${fmt(pct,2)}%)`;
+    }
+  );
 }
 function drawGainChart(result){
   const isUSD=state.viewCur==='USD',tl=result.timeline;
@@ -2633,6 +2790,16 @@ function drawGainChart(result){
     datasets.push({label:'SPY Gain',data:bmData,borderColor:'#4db8ff',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3,fill:false,borderDash:[3,3]});
   }
   makeAreaChart('chart-gains',tl.map(d=>d.date),datasets);
+  // Attach range-drag: shows gain delta
+  const isUSDg=state.viewCur==='USD';
+  attachRangeDrag('chart-gains',
+    ()=>({labels:tl.map(d=>d.date), values:tl.map(d=>isUSDg?d.gainUSD:d.gainBRL)}),
+    (delta,pct)=>{
+      const sign=delta>=0?'+':'';
+      const cur=isUSDg?'$':'R$';
+      return`${sign}${cur}${fmtK(Math.abs(delta))} (${sign}${fmt(pct,2)}%)`;
+    }
+  );
 }
 function drawFXChart(result){
   const{fxPairs}=result;
@@ -2647,6 +2814,14 @@ function drawFXChart(result){
     options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>'R$'+fmt(v,2)}}},
       plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{label:ctx=>`R$ ${fmt(ctx.parsed.y,4)}`}}}}
   });
+  // Attach range-drag: shows FX rate delta
+  attachRangeDrag('chart-fx',
+    ()=>({labels:fxPairs.map(p=>p.date), values:fxPairs.map(p=>p.price)}),
+    (delta,pct)=>{
+      const sign=delta>=0?'+':'';
+      return`${sign}R$${fmt(Math.abs(delta),4)} (${sign}${fmt(pct,2)}%)`;
+    }
+  );
 }
 
 // ================================================================
