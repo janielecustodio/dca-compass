@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -59,8 +61,10 @@ select option{background:var(--ink3)}
 .type-pill{background:var(--ink3);border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .1s}
 .type-pill.active{background:var(--sky);color:var(--ink);border-color:var(--sky);font-weight:600}
 .type-pill.fi-type.active{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.type-pill.reit-type.active{background:var(--orange);border-color:var(--orange);color:var(--ink)}
 .type-pill:not(.active):hover{color:var(--sky);border-color:var(--sky)}
 .type-pill.fi-type:not(.active):hover{color:var(--gold);border-color:var(--gold)}
+.type-pill.reit-type:not(.active):hover{color:var(--orange);border-color:var(--orange)}
 
 /* HOLDINGS */
 .holdings{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
@@ -92,6 +96,7 @@ select option{background:var(--ink3)}
 .badge-equity{background:rgba(77,184,255,.12);color:var(--sky)}
 .badge-fi{background:rgba(245,200,66,.15);color:var(--gold)}
 .badge-fx{background:rgba(184,255,87,.1);color:var(--lime)}
+.badge-reit{background:rgba(255,159,67,.12);color:var(--orange)}
 
 /* TICKER ADD ROW */
 .ticker-add-row{display:flex;gap:5px;margin-bottom:4px;align-items:center}
@@ -315,6 +320,16 @@ tbody tr:hover td{background:var(--ink3)}
 
 footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-align:center;letter-spacing:.05em}
 
+/* MOBILE TOP BAR */
+.mobile-top-bar{display:none;padding:10px 14px;background:var(--ink2);border-bottom:1px solid var(--line);align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:100;grid-column:1/-1}
+@media(max-width:900px){.mobile-top-bar{display:flex}}
+
+/* MOBILE EDIT INPUTS */
+@media(max-width:900px){
+  .holding-edit-input{font-size:14px!important;padding:6px 8px!important}
+  .btn-edit-save,.btn-edit-cancel{padding:6px 10px!important;font-size:12px!important}
+}
+
 /* LANG SWITCHER */
 .lang-switcher{display:flex;background:var(--ink3);border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
 .lang-btn{padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted2);transition:all .12s}
@@ -367,6 +382,21 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
 <body>
 <div class="layout">
 
+  <!-- MOBILE TOP BAR (visible only <900px) -->
+  <div class="mobile-top-bar">
+    <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--head);letter-spacing:1px">DCA Compass</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="pt">PT</button>
+      </div>
+      <div class="cur-switcher">
+        <button class="cur-btn" data-cur="USD">USD</button>
+        <button class="cur-btn" data-cur="BRL">BRL</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -387,11 +417,13 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
       <div class="section-label" data-i18n="section_portfolio">Portfolio</div>
       <div class="holdings" id="holdings"></div>
       <div class="wt-total" id="wt-total"></div>
+      <button id="btn-equal-weights" style="background:var(--line2);border:1px solid var(--line2);border-radius:var(--r);color:var(--lime);padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;margin-bottom:6px;transition:all .12s" data-i18n="btn_equal_weights">⊜ Equal Weights</button>
 
       <!-- type selector -->
       <div class="type-pills">
         <button class="type-pill active" data-atype="equity" data-i18n="pill_equity">📈 Equity/ETF</button>
         <button class="type-pill fi-type" data-atype="fi" data-i18n="pill_fi">🏦 Fixed Income</button>
+        <button class="type-pill reit-type" data-atype="reit" data-i18n="pill_reit">🏢 FII / REIT</button>
       </div>
 
       <!-- equity add -->
@@ -521,6 +553,7 @@ const TRANSLATIONS = {
     section_portfolio: "Portfolio",
     pill_equity: "📈 Equity/ETF",
     pill_fi: "🏦 Fixed Income",
+    pill_reit: "🏢 FII / REIT",
     fi_info: "<strong>Fixed Income</strong> — synthetic compounded series, no market data needed.<br>Supported: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, or any custom rate.",
     fi_name_label: "Name / Label",
     fi_weight_label: "Weight %",
@@ -528,7 +561,10 @@ const TRANSLATIONS = {
     fi_currency_label: "Currency",
     fi_presets_label: "Presets",
     btn_add_fi: "+ Add Fixed Income",
-    note_tickers: "<strong>US ETFs:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brazil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>FI:</strong> CDB, LCI, I-Bond, T-Bill (synthetic, no fetch)<br><strong>Tip:</strong> Double-click any holding to edit inline",
+    note_tickers: "<strong>US ETFs:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brazil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>FII/REIT:</strong> HGLG11.SA, XPLG11.SA, VNQ, O (Real Estate)<br><strong>FI:</strong> CDB, LCI, I-Bond, T-Bill (synthetic, no fetch)<br><strong>Tip:</strong> Double-click any holding to edit inline",
+    btn_equal_weights: "⊜ Equal Weights",
+    stat_cagr: "CAGR / yr",
+    opt_step_warn: "⚠ 5% weight steps auto-switched to 10% for 4+ asset portfolios to prevent freeze.",
     section_dates: "Date Range",
     label_start_date: "Start Date",
     label_end_date: "End Date",
@@ -737,6 +773,7 @@ const TRANSLATIONS = {
     section_portfolio: "Portfólio",
     pill_equity: "📈 Ações/ETF",
     pill_fi: "🏦 Renda Fixa",
+    pill_reit: "🏢 FII / REIT",
     fi_info: "<strong>Renda Fixa</strong> — série sintética de juros compostos, sem dados de mercado.<br>Suportado: <strong>CDB / LCI / LCA (BRL)</strong>, <strong>I-Bond / T-Bill (USD)</strong>, ou qualquer taxa personalizada.",
     fi_name_label: "Nome / Rótulo",
     fi_weight_label: "Peso %",
@@ -744,7 +781,10 @@ const TRANSLATIONS = {
     fi_currency_label: "Moeda",
     fi_presets_label: "Predefinições",
     btn_add_fi: "+ Adicionar Renda Fixa",
-    note_tickers: "<strong>ETFs EUA:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brasil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>RF:</strong> CDB, LCI, I-Bond, T-Bill (sintético, sem busca)<br><strong>Dica:</strong> Clique duplo em qualquer ativo para editar",
+    note_tickers: "<strong>ETFs EUA:</strong> SPY, QQQ, VUG, IVV, VTI, GLD, EWZ<br><strong>Brasil B3:</strong> BOVA11.SA, PETR4.SA, VALE3.SA, ITUB4.SA<br><strong>FII/REIT:</strong> HGLG11.SA, XPLG11.SA, VNQ, O (Imóveis)<br><strong>RF:</strong> CDB, LCI, I-Bond, T-Bill (sintético, sem busca)<br><strong>Dica:</strong> Clique duplo em qualquer ativo para editar",
+    btn_equal_weights: "⊜ Pesos Iguais",
+    stat_cagr: "CAGR / ano",
+    opt_step_warn: "⚠ Passos de 5% alterados para 10% automaticamente para portfólios com 4+ ativos.",
     section_dates: "Período",
     label_start_date: "Data Inicial",
     label_end_date: "Data Final",
@@ -1062,6 +1102,30 @@ let state = {
 };
 
 // ================================================================
+//  FETCH CACHE
+// ================================================================
+const priceCache = {}; // key: `${sym}_${startDate}_${endDate}` => pairs[]
+const fxCache = {};    // key: `${startDate}_${endDate}` => pairs[]
+
+async function fetchYahooCached(sym, startDate, endDate) {
+  const key = `${sym}_${startDate}_${endDate}`;
+  if (priceCache[key]) return priceCache[key];
+  const pairs = await fetchYahoo(sym, startDate, endDate);
+  priceCache[key] = pairs;
+  return pairs;
+}
+
+async function fetchFXCached(startDate, endDate) {
+  const key = `${startDate}_${endDate}`;
+  if (fxCache[key]) return fxCache[key];
+  let pairs = [];
+  try { pairs = await fetchYahoo('BRL=X', startDate, endDate); }
+  catch(e) { try { pairs = await fetchYahoo('USDBRL=X', startDate, endDate); } catch(e2) {} }
+  if (pairs.length) fxCache[key] = pairs;
+  return pairs;
+}
+
+// ================================================================
 //  UTILS
 // ================================================================
 const fmt    = (n,d=2) => n==null?"—":Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -1087,13 +1151,59 @@ function lookupPrice(map,date){
 // ================================================================
 //  FIXED INCOME — synthetic compounded series (base 100)
 // ================================================================
-function generateFIPairs(startDate,endDate,annualRate){
-  const dr=Math.pow(1+annualRate/100,1/365)-1;
+
+// Historical annual rates (approximate, used for backtesting)
+const FI_HIST_RATES = {
+  'SELIC': [
+    {y:2015,r:13.25},{y:2016,r:14.0},{y:2017,r:10.25},{y:2018,r:6.5},
+    {y:2019,r:4.5},{y:2020,r:2.0},{y:2021,r:9.25},{y:2022,r:13.75},
+    {y:2023,r:11.75},{y:2024,r:10.5},{y:2025,r:13.0},
+  ],
+  'CDI': [
+    {y:2015,r:13.2},{y:2016,r:13.9},{y:2017,r:10.1},{y:2018,r:6.4},
+    {y:2019,r:4.4},{y:2020,r:1.9},{y:2021,r:9.1},{y:2022,r:13.6},
+    {y:2023,r:11.6},{y:2024,r:10.4},{y:2025,r:12.8},
+  ],
+  'IPCA': [
+    {y:2015,r:10.67},{y:2016,r:6.29},{y:2017,r:2.95},{y:2018,r:3.75},
+    {y:2019,r:4.31},{y:2020,r:4.52},{y:2021,r:10.06},{y:2022,r:5.79},
+    {y:2023,r:4.62},{y:2024,r:4.83},{y:2025,r:5.0},
+  ],
+  'US_TBILL': [
+    {y:2015,r:0.1},{y:2016,r:0.5},{y:2017,r:1.3},{y:2018,r:2.4},
+    {y:2019,r:2.1},{y:2020,r:0.1},{y:2021,r:0.05},{y:2022,r:4.3},
+    {y:2023,r:5.25},{y:2024,r:5.0},{y:2025,r:4.3},
+  ],
+  'US_IBOND': [
+    {y:2015,r:0.0},{y:2016,r:1.76},{y:2017,r:2.58},{y:2018,r:2.83},
+    {y:2019,r:2.22},{y:2020,r:1.68},{y:2021,r:7.12},{y:2022,r:9.62},
+    {y:2023,r:4.3},{y:2024,r:4.28},{y:2025,r:3.1},
+  ],
+};
+
+function getHistoricalFIRate(fiName, year) {
+  const name = fiName.toUpperCase();
+  let series = null;
+  if (name.includes('CDI') || name.includes('CDB')) series = FI_HIST_RATES.CDI;
+  else if (name.includes('SELIC') || name.includes('LCI') || name.includes('LCA')) series = FI_HIST_RATES.SELIC;
+  else if (name.includes('IPCA')) series = FI_HIST_RATES.IPCA;
+  else if (name.includes('T-BILL') || name.includes('TBILL')) series = FI_HIST_RATES.US_TBILL;
+  else if (name.includes('I-BOND') || name.includes('IBOND')) series = FI_HIST_RATES.US_IBOND;
+  if (!series) return null;
+  const entry = series.find(e => e.y === year) || series[series.length-1];
+  return entry.r;
+}
+
+function generateFIPairs(startDate,endDate,annualRate,fiName){
   const pairs=[];
   let cur=new Date(startDate);
   const end=new Date(endDate);
   let price=100;
   while(cur<=end){
+    const year=cur.getUTCFullYear();
+    const histRate=fiName?getHistoricalFIRate(fiName,year):null;
+    const rate=histRate!==null?histRate:annualRate;
+    const dr=Math.pow(1+rate/100,1/365)-1;
     pairs.push({date:cur.toISOString().slice(0,10),price:parseFloat(price.toFixed(6))});
     price*=(1+dr);
     cur.setDate(cur.getDate()+1);
@@ -1107,6 +1217,7 @@ function generateFIPairs(startDate,endDate,annualRate){
 const PROXIES=[
   u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
   u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
 // Try v8 API first, then v10 as fallback
@@ -1121,7 +1232,7 @@ async function fetchYahoo(ticker,startDate,endDate){
   for(const yhUrl of urls){
     for(const makeProxy of PROXIES){
       try{
-        const res=await fetch(makeProxy(yhUrl),{signal:AbortSignal.timeout(20000)});
+        const res=await fetch(makeProxy(yhUrl),{signal:AbortSignal.timeout(12000)});
         if(!res.ok){errors.push(`HTTP ${res.status} for ${ticker}`);continue}
         const outer=await res.json();
         const raw=outer.contents?JSON.parse(outer.contents):outer;
@@ -1427,17 +1538,19 @@ function fastDCA(priceMaps, fxMap, fiFlags, fiCurs, weights, investDates, amtPer
 // Generate all weight combinations for N assets at stepPct increments that sum to 100.
 // E.g. 2 assets, step=10: [10,90],[20,80],...,[90,10]
 function genWeightCombos(n, stepPct){
+  const MAX_COMBOS = 2000;
   const combos=[];
   if(n===1){return[[100]];}
   function recurse(remaining, current){
+    if(combos.length>=MAX_COMBOS) return; // hard stop
     if(current.length===n-1){
-      // last slot gets whatever remains — must be a valid multiple of stepPct and >=stepPct
       const last=Math.round(remaining);
       if(last>=stepPct && last%stepPct===0) combos.push([...current,last]);
       return;
     }
-    const minRemain=stepPct*(n-current.length-1); // minimum needed for the slots after this
+    const minRemain=stepPct*(n-current.length-1);
     for(let v=stepPct; v<=remaining-minRemain; v+=stepPct){
+      if(combos.length>=MAX_COMBOS) return;
       recurse(remaining-v,[...current,v]);
     }
   }
@@ -1458,10 +1571,10 @@ function fmtWeightsShort(combo){
 function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,endDate,stepPct}){
   const fxMap=buildPriceMap(fxPairs);
   const n=tickerData.length;
-  const syms=tickerData.map(t=>t.sym);
-  const priceMaps=tickerData.map(t=>buildPriceMap(t.pairs));
-  const fiFlags=tickerData.map(t=>t.type==='fi');
-  const fiCurs=tickerData.map(t=>t.fiCur||'USD');
+  const syms=tickerData.map(tk=>tk.sym);
+  const priceMaps=tickerData.map(tk=>buildPriceMap(tk.pairs));
+  const fiFlags=tickerData.map(tk=>tk.type==='fi');
+  const fiCurs=tickerData.map(tk=>tk.fiCur||'USD');
 
   const combos=genWeightCombos(n,stepPct);
   const results=[]; // {weights, byFreq: [{freq, ...fastDCA result}]}
@@ -1515,7 +1628,13 @@ async function runStrategyOptimizer(userResult){
   if(btn){btn.disabled=true;btn.innerHTML=`<div class="spin" style="width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d0f14;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"></div>${t('optimizing')}`}
 
   const annualBudgetUSD=parseFloat($('opt-annual-usd')?.value)||6000;
-  const stepPct=parseInt($('opt-step')?.value)||10;
+  let stepPct=parseInt($('opt-step')?.value)||10;
+  // Auto-switch 5% -> 10% for 4+ assets to prevent browser freeze
+  if(stepPct===5 && state.tickers.length>3){
+    stepPct=10;
+    const warn=document.getElementById('opt-step-warn');
+    if(warn) warn.style.display='block';
+  }
 
   // Determine date range
   let sd=$('start-date').value,ed=$('end-date').value;
@@ -1659,7 +1778,7 @@ function renderStrategyResults(optResult, sd, ed){
     <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600">
       ${t('opt_return_matrix')} (${isUSD?'USD':'BRL'} ${t('opt_total_return_pct')})
     </div>
-    <div class="alloc-table-wrap">
+    <div style="max-height:380px;overflow-y:auto"><div class="alloc-table-wrap" style="border:none;border-radius:0">
       <table class="alloc-table">
         <thead>
           <tr>
@@ -1694,7 +1813,7 @@ function renderStrategyResults(optResult, sd, ed){
           }).join('')}
         </tbody>
       </table>
-    </div>
+    </div></div>
     ${sortedResults.length>60?`<div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:12px">${t('opt_show_top')(sortedResults.length)}</div>`:''}
   `;
 
@@ -1768,7 +1887,7 @@ function showStratDetail(data){
   const ret=isUSD?r.retUSD:r.retBRL;
   const fv=isUSD?r.finalValUSD:r.finalValBRL;
   const ti=isUSD?r.totalInvUSD:r.totalInvBRL;
-  const syms=state.tickers.map(t=>t.sym);
+  const syms=state.tickers.map(tk=>tk.sym);
   const COLORS=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f'];
   const perPeriod=r.purchases>0?(r.totalInvUSD/r.purchases):0;
 
@@ -2090,7 +2209,11 @@ const CD={
     legend:{display:false},
     tooltip:{backgroundColor:'rgba(22,26,35,.95)',borderColor:'#262d3d',borderWidth:1,padding:9,
       titleFont:{family:"'IBM Plex Mono',monospace",size:10},
-      bodyFont:{family:"'IBM Plex Mono',monospace",size:11}}
+      bodyFont:{family:"'IBM Plex Mono',monospace",size:11}},
+    zoom:{
+      zoom:{drag:{enabled:true,backgroundColor:'rgba(184,255,87,0.1)',borderColor:'rgba(184,255,87,0.4)',borderWidth:1},mode:'x',onZoomComplete:()=>{}},
+      pan:{enabled:false},
+    }
   },
   scales:{
     x:{ticks:{color:'#5a6480',font:{family:"'IBM Plex Mono',monospace",size:9},maxRotation:0},grid:{color:'#1e2330'},border:{color:'#262d3d'}},
@@ -2121,12 +2244,32 @@ function makeLineChart(id,labels,datasets,yFmt){
       labels:{color:'#7a869e',font:{family:"'IBM Plex Mono',monospace",size:9},boxWidth:10,padding:12}}}}});
 }
 
+function addZoomReset(chartId){
+  const wrap=document.getElementById(chartId)?.parentElement;
+  if(!wrap)return;
+  let resetBtn=wrap.querySelector('.zoom-reset-btn');
+  if(!resetBtn){
+    resetBtn=document.createElement('button');
+    resetBtn.className='zoom-reset-btn';
+    resetBtn.style.cssText='position:absolute;top:8px;right:8px;background:var(--line2);border:1px solid var(--line2);border-radius:4px;color:var(--lime);padding:3px 8px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;cursor:pointer;display:none;z-index:10';
+    resetBtn.textContent='↺ Reset';
+    wrap.style.position='relative';
+    wrap.appendChild(resetBtn);
+    resetBtn.addEventListener('click',()=>{state.charts[chartId]?.resetZoom();resetBtn.style.display='none';});
+  }
+  if(state.charts[chartId]){
+    state.charts[chartId].options.plugins.zoom.zoom.onZoomComplete=()=>{resetBtn.style.display='block';};
+    state.charts[chartId].update('none');
+  }
+}
+
 // ================================================================
 //  UI HELPERS
 // ================================================================
-function assetBadge(t){
-  if(t.type==='fi') return `<span class="asset-type-badge badge-fi">${t.fiCur==='BRL'?'🇧🇷':'🇺🇸'} FIXED</span>`;
-  if(t.flag==='💱') return `<span class="asset-type-badge badge-fx">FX</span>`;
+function assetBadge(tk){
+  if(tk.type==='fi') return `<span class="asset-type-badge badge-fi">${tk.fiCur==='BRL'?'🇧🇷':'🇺🇸'} FIXED</span>`;
+  if(tk.type==='reit') return `<span class="asset-type-badge badge-reit">REIT</span>`;
+  if(tk.flag==='💱') return `<span class="asset-type-badge badge-fx">FX</span>`;
   return `<span class="asset-type-badge badge-equity">EQUITY</span>`;
 }
 
@@ -2135,21 +2278,23 @@ function assetBadge(t){
 // ================================================================
 function renderHoldings(){
   const el=$('holdings');
-  const totalWt=state.tickers.reduce((a,t)=>a+t.wt,0);
-  el.innerHTML=state.tickers.map((t,i)=>{
+  if(!el) return;
+  const totalWt=state.tickers.reduce((a,tk)=>a+tk.wt,0);
+  const isTouchDevice=()=>window.matchMedia('(hover: none)').matches;
+  el.innerHTML=state.tickers.map((tk,i)=>{
     if(state.editingIdx===i){
-      const fopts=['🇺🇸','🇧🇷','💱'].map(f=>`<option value="${f}"${t.flag===f?' selected':''}>${f}</option>`).join('');
+      const fopts=['🇺🇸','🇧🇷','💱'].map(f=>`<option value="${f}"${tk.flag===f?' selected':''}>${f}</option>`).join('');
       return `<div class="holding editing" data-idx="${i}">
         <div class="holding-edit-row">
-          ${t.type==='fi'?`
-            <span style="font-size:11px;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;flex:1">${t.sym}</span>
-            <input class="holding-edit-input holding-edit-wt" type="number" value="${t.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
+          ${tk.type==='fi'?`
+            <span style="font-size:11px;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;flex:1">${tk.sym}</span>
+            <input class="holding-edit-input holding-edit-wt" type="number" value="${tk.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
             <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%</span>
-            <input class="holding-edit-input" style="width:66px" type="number" value="${t.fiRate}" step="0.1" min="0" data-field="fiRate" placeholder="Rate%">
+            <input class="holding-edit-input" style="width:66px" type="number" value="${tk.fiRate}" step="0.1" min="0" data-field="fiRate" placeholder="Rate%">
             <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%/yr</span>
           `:`
-            <input class="holding-edit-input holding-edit-sym" type="text" value="${t.sym}" maxlength="20" data-field="sym" placeholder="SYM" style="text-transform:uppercase">
-            <input class="holding-edit-input holding-edit-wt" type="number" value="${t.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
+            <input class="holding-edit-input holding-edit-sym" type="text" value="${tk.sym}" maxlength="20" data-field="sym" placeholder="SYM" style="text-transform:uppercase">
+            <input class="holding-edit-input holding-edit-wt" type="number" value="${tk.wt}" min="1" max="100" data-field="wt" placeholder="Wt%">
             <span style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">%</span>
             <select class="holding-edit-input holding-edit-flag" data-field="flag">${fopts}</select>
           `}
@@ -2159,11 +2304,11 @@ function renderHoldings(){
       </div>`;
     }
     return `<div class="holding" data-idx="${i}" title="${t('title_dblclick')}">
-      <span class="holding-flag">${t.flag}</span>
-      <span class="holding-sym">${t.sym}</span>
-      ${assetBadge(t)}
+      <span class="holding-flag">${tk.flag}</span>
+      <span class="holding-sym">${tk.sym}</span>
+      ${assetBadge(tk)}
       <span class="holding-edit-hint">${t('dblclick_hint')}</span>
-      <span class="holding-wt">${t.wt}%</span>
+      <span class="holding-wt">${tk.wt}%</span>
       <button class="holding-rm" data-idx="${i}">×</button>
     </div>`;
   }).join('');
@@ -2172,16 +2317,20 @@ function renderHoldings(){
     btn.addEventListener('click',e=>{e.stopPropagation();state.tickers.splice(+btn.dataset.idx,1);state.editingIdx=null;renderHoldings()});
   });
   el.querySelectorAll('.holding:not(.editing)').forEach(row=>{
-    row.addEventListener('dblclick',()=>{state.editingIdx=+row.dataset.idx;renderHoldings();setTimeout(()=>el.querySelector('.holding.editing input')?.focus(),40)});
+    if(isTouchDevice()){
+      row.addEventListener('click',()=>{state.editingIdx=+row.dataset.idx;renderHoldings();setTimeout(()=>el.querySelector('.holding.editing input')?.focus(),40)});
+    } else {
+      row.addEventListener('dblclick',()=>{state.editingIdx=+row.dataset.idx;renderHoldings();setTimeout(()=>el.querySelector('.holding.editing input')?.focus(),40)});
+    }
   });
   el.querySelectorAll('.btn-edit-save').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const idx=+btn.dataset.idx;
       el.querySelectorAll('[data-field]').forEach(inp=>{
-        const f=inp.dataset.field,t=state.tickers[idx];
-        if(f==='wt'||f==='fiRate') t[f]=parseFloat(inp.value)||t[f];
-        else if(f==='sym') t.sym=inp.value.trim().toUpperCase()||t.sym;
-        else t[f]=inp.value;
+        const f=inp.dataset.field,tkr=state.tickers[idx];
+        if(f==='wt'||f==='fiRate') tkr[f]=parseFloat(inp.value)||tkr[f];
+        else if(f==='sym') tkr.sym=inp.value.trim().toUpperCase()||tkr.sym;
+        else tkr[f]=inp.value;
       });
       state.editingIdx=null;renderHoldings();
     });
@@ -2192,9 +2341,11 @@ function renderHoldings(){
   });
 
   const wtEl=$('wt-total');
-  const wtStatus=totalWt===100?'ok':totalWt>100?'over':'under';
-  wtEl.textContent=t('wt_label')(totalWt,wtStatus);
-  wtEl.className='wt-total '+(totalWt===100?'wt-ok':totalWt>100?'wt-over':'wt-warn');
+  if(wtEl){
+    const wtStatus=totalWt===100?'ok':totalWt>100?'over':'under';
+    wtEl.textContent=t('wt_label')(totalWt,wtStatus);
+    wtEl.className='wt-total '+(totalWt===100?'wt-ok':totalWt>100?'wt-over':'wt-warn');
+  }
 }
 
 // ================================================================
@@ -2206,7 +2357,7 @@ function renderSidebar(){
   $('presets').querySelectorAll('.preset').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const p=PRESETS.find(x=>x.label===btn.dataset.preset);
-      if(p){state.tickers=p.tickers.map(t=>({...t}));state.editingIdx=null;renderHoldings()}
+      if(p){state.tickers=p.tickers.map(tk=>({...tk}));state.editingIdx=null;renderHoldings()}
     });
   });
   // Period pills
@@ -2226,7 +2377,7 @@ function renderSidebar(){
       document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
       pill.classList.add('active');
       state.activeAddType=pill.dataset.atype;
-      $('equity-add-row').style.display=state.activeAddType==='equity'?'block':'none';
+      $('equity-add-row').style.display=(state.activeAddType==='equity'||state.activeAddType==='reit')?'block':'none';
       $('fi-add-row').style.display=state.activeAddType==='fi'?'block':'none';
     });
   });
@@ -2253,7 +2404,7 @@ function showPanel(name){
 function setLoading(tickers){
   showPanel('loading');$('loading-ticker').textContent='FETCHING DATA';
   const items=[
-    ...tickers.filter(t=>t.type!=='fi').map(t=>({id:t.sym,label:`${t.flag} ${t.sym}`})),
+    ...tickers.filter(tk=>tk.type!=='fi').map(tk=>({id:tk.sym,label:`${tk.flag} ${tk.sym}`})),
     {id:'__fx',label:t('progress_fx')},
     {id:'__calc',label:t('progress_calc')},
   ];
@@ -2294,6 +2445,7 @@ function renderResults(result){
         <div class="stat-label">${t('stat_total_return')}</div>
         <div class="stat-value ${cls(ret)}">${fmtPct(ret)}</div>
         <div class="stat-sub">${t('stat_gain')}: ${isUSD?fmtUSD(gain):fmtBRL(gain)}</div>
+        ${(isUSD?result.cagrUSD:result.cagrBRL)!=null?`<div class="stat-sub" style="color:var(--lime);margin-top:2px">CAGR ${fmtPct(isUSD?result.cagrUSD:result.cagrBRL)}/yr</div>`:''}
       </div>
       <div class="stat-card c-sky">
         <div class="stat-label">${t('stat_return_usd')}</div>
@@ -2325,6 +2477,7 @@ function renderResults(result){
           <div class="chart-legend">
             <span class="legend-item"><span class="legend-dot" style="background:var(--lime)"></span>${t('chart_value')}</span>
             <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>${t('chart_cost_basis')}</span>
+            ${result.benchmarkResult?`<span class="legend-item"><span class="legend-dot" style="background:var(--sky)"></span>SPY</span>`:''}
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chart-main"></canvas></div>
@@ -2383,6 +2536,7 @@ function renderResults(result){
           </div>
         </div>
         <button class="btn-run" style="max-width:300px;margin-bottom:18px;font-size:17px;padding:11px" id="btn-run-optimizer">${t('btn_find_optimal')}</button>
+        <div id="opt-step-warn" style="display:none" class="warn-box" data-i18n="opt_step_warn">⚠ 5% weight steps auto-switched to 10% for 4+ asset portfolios to prevent freeze.</div>
         <div id="optimizer-results"></div>
       </div>
     </div>
@@ -2424,9 +2578,9 @@ function renderResults(result){
       ['overview','gains','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
         document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
       );
-      if(tab.dataset.tab==='overview') drawMainChart(result);
-      if(tab.dataset.tab==='gains') drawGainChart(result);
-      if(tab.dataset.tab==='fx') drawFXChart(result);
+      if(tab.dataset.tab==='overview'){drawMainChart(result);addZoomReset('chart-main');}
+      if(tab.dataset.tab==='gains'){drawGainChart(result);addZoomReset('chart-gains');}
+      if(tab.dataset.tab==='fx'){drawFXChart(result);addZoomReset('chart-fx');}
       if(tab.dataset.tab==='signals') renderSignals(result);
       if(tab.dataset.tab==='table') renderTable(result);
       if(tab.dataset.tab==='breakdown') renderBreakdown(result);
@@ -2440,6 +2594,7 @@ function renderResults(result){
   });
 
   drawMainChart(result);
+  addZoomReset('chart-main');
 }
 
 // ================================================================
@@ -2451,19 +2606,33 @@ function drawMainChart(result){
   const ctx=canvas.getContext('2d');
   const g1=ctx.createLinearGradient(0,0,0,250);g1.addColorStop(0,'rgba(184,255,87,.22)');g1.addColorStop(1,'rgba(184,255,87,0)');
   const g2=ctx.createLinearGradient(0,0,0,250);g2.addColorStop(0,'rgba(167,139,250,.18)');g2.addColorStop(1,'rgba(167,139,250,0)');
-  makeAreaChart('chart-main',tl.map(d=>d.date),[
+  const datasets=[
     {label:'Portfolio Value',data:tl.map(d=>isUSD?d.valueUSD:d.valueBRL),borderColor:'#b8ff57',backgroundColor:g1,borderWidth:2,pointRadius:0,tension:.3,fill:true},
     {label:'Cost Basis',data:tl.map(d=>isUSD?d.investedUSD:d.investedBRL),borderColor:'#a78bfa',backgroundColor:g2,borderWidth:1.5,pointRadius:0,tension:.3,fill:true,borderDash:[5,3]},
-  ]);
+  ];
+  if(result.benchmarkResult){
+    const bmTl=result.benchmarkResult.timeline;
+    const dateMap={};bmTl.forEach(d=>dateMap[d.date]=isUSD?d.valueUSD:d.valueBRL);
+    const bmData=tl.map(d=>dateMap[d.date]??null);
+    datasets.push({label:'SPY (benchmark)',data:bmData,borderColor:'#4db8ff',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3,fill:false,borderDash:[3,3]});
+  }
+  makeAreaChart('chart-main',tl.map(d=>d.date),datasets);
 }
 function drawGainChart(result){
   const isUSD=state.viewCur==='USD',tl=result.timeline;
   const canvas=document.getElementById('chart-gains');if(!canvas)return;
   const ctx=canvas.getContext('2d');
   const g=ctx.createLinearGradient(0,0,0,250);g.addColorStop(0,'rgba(184,255,87,.28)');g.addColorStop(1,'rgba(184,255,87,0)');
-  makeAreaChart('chart-gains',tl.map(d=>d.date),[
+  const datasets=[
     {label:'Gain',data:tl.map(d=>isUSD?d.gainUSD:d.gainBRL),borderColor:'#b8ff57',backgroundColor:g,borderWidth:2,pointRadius:0,tension:.3,fill:true},
-  ]);
+  ];
+  if(result.benchmarkResult){
+    const bmTl=result.benchmarkResult.timeline;
+    const dateMap={};bmTl.forEach(d=>dateMap[d.date]=isUSD?d.gainUSD:d.gainBRL);
+    const bmData=tl.map(d=>dateMap[d.date]??null);
+    datasets.push({label:'SPY Gain',data:bmData,borderColor:'#4db8ff',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3,fill:false,borderDash:[3,3]});
+  }
+  makeAreaChart('chart-gains',tl.map(d=>d.date),datasets);
 }
 function drawFXChart(result){
   const{fxPairs}=result;
@@ -2594,27 +2763,60 @@ async function runSimulation(){
   if(amtUSD===0&&amtBRL===0){showError(t('err_set_amount'));return}
   if(new Date(startDate)>=new Date(endDate)){showError(t('err_date_order'));return}
 
-  hideError();setLoading(tickers);
+  hideError();
+
+  const totalWt=tickers.reduce((a,tk)=>a+tk.wt,0)||100;
+  const weights=tickers.map(tk=>tk.wt/totalWt);
+  const periodDays=PERIODS.find(p=>p.label===state.period).days;
+  const investDates=buildInvestDates(startDate,endDate,periodDays);
+
+  // Check if all data already cached — skip loading UI and refetch
+  const allDataCached = tickers.every(tk =>
+    tk.type==='fi' || !!priceCache[`${tk.sym}_${startDate}_${endDate}`]
+  ) && !!fxCache[`${startDate}_${endDate}`];
+
+  if(allDataCached && state.result){
+    // Rebuild tickerData from cache
+    const cachedTickerData=[];
+    for(const tk of tickers){
+      let pairs;
+      if(tk.type==='fi'){
+        pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
+      } else {
+        pairs=priceCache[`${tk.sym}_${startDate}_${endDate}`];
+      }
+      if(pairs) cachedTickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
+    }
+    const cachedFxPairs=fxCache[`${startDate}_${endDate}`]||[];
+    const result=runDCA({tickerData:cachedTickerData,fxPairs:cachedFxPairs,investDates,amtUSD,amtBRL,weights});
+    const years=(new Date(endDate)-new Date(startDate))/(365.25*86400000);
+    const last=result.timeline[result.timeline.length-1];
+    if(last&&result.totalInvUSD>0&&years>0.1){
+      result.cagrUSD=(Math.pow(last.valueUSD/result.totalInvUSD,1/years)-1)*100;
+      result.cagrBRL=(Math.pow(last.valueBRL/result.totalInvBRL,1/years)-1)*100;
+    }
+    state.result=result;
+    renderResults(result);
+    return;
+  }
+
+  setLoading(tickers);
   $('btn-run').disabled=true;
   $('btn-run').innerHTML=`<div class="spin"></div><span>${t('loading_fetching')}…</span>`;
 
   const fetchErrors=[];
 
   try{
-    const totalWt=tickers.reduce((a,t)=>a+t.wt,0)||100;
-    const weights=tickers.map(t=>t.wt/totalWt);
-    const periodDays=PERIODS.find(p=>p.label===state.period).days;
-    const investDates=buildInvestDates(startDate,endDate,periodDays);
 
     const tickerData=[];
     for(const tk of tickers){
       $('loading-ticker').textContent=t('loading_ticker')(tk.sym);
       let pairs;
       if(tk.type==='fi'){
-        pairs=generateFIPairs(startDate,endDate,tk.fiRate||10);
+        pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
       } else {
         try{
-          pairs=await fetchYahoo(tk.sym,startDate,endDate);
+          pairs=await fetchYahooCached(tk.sym,startDate,endDate);
         }catch(e){
           fetchErrors.push({sym:tk.sym,msg:e.message});
           // Skip this ticker but continue with others
@@ -2635,10 +2837,7 @@ async function runSimulation(){
     }
 
     $('loading-ticker').textContent=t('loading_fx');
-    let fxPairs=[];
-    try{fxPairs=await fetchYahoo('BRL=X',startDate,endDate)}catch(e){
-      try{fxPairs=await fetchYahoo('USDBRL=X',startDate,endDate)}catch(e2){}
-    }
+    let fxPairs=await fetchFXCached(startDate,endDate);
     if(!fxPairs.length){
       const d=new Date(startDate),e=new Date(endDate);
       while(d<=e){fxPairs.push({date:d.toISOString().slice(0,10),price:5.0});d.setDate(d.getDate()+7)}
@@ -2647,6 +2846,25 @@ async function runSimulation(){
 
     $('loading-ticker').textContent=t('loading_calc');
     const result=runDCA({tickerData,fxPairs,investDates,amtUSD,amtBRL,weights});
+    // Compute CAGR
+    const _years=(new Date(endDate)-new Date(startDate))/(365.25*86400000);
+    const _last=result.timeline[result.timeline.length-1];
+    if(_last&&result.totalInvUSD>0&&_years>0.1){
+      result.cagrUSD=(Math.pow(_last.valueUSD/result.totalInvUSD,1/_years)-1)*100;
+      result.cagrBRL=(Math.pow(_last.valueBRL/result.totalInvBRL,1/_years)-1)*100;
+    }
+    // Fetch SPY benchmark (if not already in portfolio)
+    let benchmarkPairs=null;
+    if(!tickers.find(tk=>tk.sym==='SPY')){
+      try{benchmarkPairs=await fetchYahooCached('SPY',startDate,endDate);}catch(e){}
+    } else {
+      benchmarkPairs=tickerData.find(td=>td.sym==='SPY')?.pairs||null;
+    }
+    if(benchmarkPairs){
+      const bmTickerData=[{sym:'SPY',flag:'🇺🇸',type:'equity',fiCur:'USD',pairs:benchmarkPairs}];
+      result.benchmarkResult=runDCA({tickerData:bmTickerData,fxPairs,investDates,amtUSD,amtBRL,weights:[1]});
+      result.benchmarkSym='SPY';
+    }
     markProgress('__calc');
     state.result=result;
 
@@ -2679,18 +2897,26 @@ function hideError(){$('error-msg').style.display='none'}
 // ================================================================
 $('btn-run').addEventListener('click',runSimulation);
 
-$('btn-add').addEventListener('click',()=>{
-  const sym=$('new-sym').value.trim().toUpperCase();
-  const wt=parseFloat($('new-wt').value)||10;
-  const flag=$('new-flag').value.split(' ')[0];
-  if(!sym)return;
-  if($('new-sym').classList.contains('input-invalid')){
-    if(!confirm(t('confirm_add_unverified')(sym)))return;
-  }
-  state.tickers.push({sym,wt,flag,type:'equity'});
-  state.editingIdx=null;renderHoldings();
-  $('new-sym').value='';setValState('idle');
-});
+const _btnAdd=$('btn-add');
+if(_btnAdd){
+  _btnAdd.addEventListener('click',()=>{
+    const symInp=$('new-sym');
+    const wtInp=$('new-wt');
+    const flagInp=$('new-flag');
+    if(!symInp||!wtInp||!flagInp) return;
+    const sym=symInp.value.trim().toUpperCase();
+    const wt=parseFloat(wtInp.value)||10;
+    const flag=flagInp.value.split(' ')[0];
+    if(!sym) return;
+    if(symInp.classList.contains('input-invalid')){
+      if(!confirm(t('confirm_add_unverified')(sym))) return;
+    }
+    const atype=state.activeAddType==='reit'?'reit':'equity';
+    state.tickers.push({sym,wt,flag,type:atype});
+    state.editingIdx=null;renderHoldings();
+    symInp.value='';setValState('idle');
+  });
+}
 $('new-sym').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-add').click()});
 $('new-sym').addEventListener('input',e=>scheduleValidation(e.target.value.trim().toUpperCase()));
 
@@ -2724,19 +2950,37 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
 // ================================================================
 //  INIT
 // ================================================================
-// Set the correct active lang button on load
+// Set the correct active lang button on load (includes mobile top bar)
 document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
+// Set the correct active currency button on load (includes mobile top bar)
+document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.dataset.cur===state.viewCur));
 applyTranslations();
 renderSidebar();
 renderHoldings();
 const _aToggle=document.getElementById('about-toggle');
 const _aBody=document.getElementById('about-body');
 const _aChev=document.getElementById('about-chevron');
-if(_aToggle){_aToggle.addEventListener('click',()=>{const o=_aBody.classList.toggle('open');_aChev.classList.toggle('open',o);if(o)renderAboutDCA();})}
+if(!_aToggle) console.warn('about-toggle not found');
+if(_aToggle&&_aBody&&_aChev){
+  _aToggle.addEventListener('click',()=>{
+    const o=_aBody.classList.toggle('open');
+    _aChev.classList.toggle('open',o);
+    if(o) renderAboutDCA();
+  });
+}
 
 // Set initial period desc
 const _initPeriod=PERIODS.find(p=>p.label===state.period);
 if(_initPeriod) $('period-desc').textContent=t('period_desc')(_initPeriod.days);
+
+// Equal Weights button
+document.getElementById('btn-equal-weights')?.addEventListener('click', () => {
+  const n = state.tickers.length;
+  if (!n) return;
+  const w = Math.floor(100/n);
+  state.tickers.forEach((tk, i) => tk.wt = i === n-1 ? 100 - w*(n-1) : w);
+  renderHoldings();
+});
 </script>
 </body>
 </html>
