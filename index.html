@@ -3491,12 +3491,15 @@ function drawCompositionChart(result, mode){
           mode:'index',intersect:false,
           callbacks:{
             label:c=>{
-              if(isPct) return` ${c.dataset.label}: ${fmt(c.parsed.y,1)}%`;
+              // c.parsed.y is the cumulative stacked value in Chart.js stacked mode;
+              // use c.raw to get the actual individual series value
+              if(isPct) return` ${c.dataset.label}: ${fmt(c.raw,1)}%`;
               const cur=isUSD?'$':'R$';
-              return` ${c.dataset.label}: ${cur}${fmtK(c.parsed.y)}`;
+              return` ${c.dataset.label}: ${cur}${fmtK(c.raw)}`;
             },
             ...(isPct ? {afterBody:items=>{
-              const total=items.reduce((a,it)=>a+it.parsed.y,0);
+              // Sum raw values (individual), not parsed.y (cumulative stacked)
+              const total=items.reduce((a,it)=>a+(it.raw||0),0);
               return[`Total: ${fmt(total,1)}%`];
             }} : {})
           }
