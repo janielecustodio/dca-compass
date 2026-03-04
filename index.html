@@ -116,6 +116,8 @@ select option{background:var(--ink3)}
 .presets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .preset{background:var(--ink3);border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);cursor:pointer;transition:all .12s;white-space:nowrap}
 .preset:hover{border-color:var(--violet);color:var(--violet)}
+.preset[data-prewarm="1"]{border-color:var(--lime);color:var(--lime)}
+.preset[data-prewarm="1"]:hover{border-color:var(--accent);color:var(--accent)}
 
 /* AMT */
 .amt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -778,6 +780,12 @@ const TRANSLATIONS = {
     warn_skipped: sym => `⚠ ${sym} skipped after retries — excluded from simulation.`,
     expense_ratio_note: "Returns shown net of estimated fund expense ratios.",
     opt_allow_zero: "Allow 0% allocations (exclude assets)",
+    preset_ready: "⚡ Ready",
+    preset_loading: "Loading…",
+    comp_absolute: "Absolute",
+    comp_pct: "100%",
+    retry_ticker: sym => `↺ Retry ${sym}`,
+    warn_some_failed_retry: "⚠ Some tickers failed — you can retry individually:",
     // Risk analytics
     stat_sharpe: "Sharpe Ratio",
     stat_cvar: "CVaR (95%)",
@@ -1048,6 +1056,12 @@ const TRANSLATIONS = {
     warn_skipped: sym => `⚠ ${sym} ignorado após tentativas — excluído da simulação.`,
     expense_ratio_note: "Retornos líquidos de taxas estimadas de administração dos fundos.",
     opt_allow_zero: "Permitir alocação 0% (excluir ativos)",
+    preset_ready: "⚡ Pronto",
+    preset_loading: "Carregando…",
+    comp_absolute: "Absoluto",
+    comp_pct: "100%",
+    retry_ticker: sym => `↺ Tentar ${sym}`,
+    warn_some_failed_retry: "⚠ Alguns ativos falharam — você pode tentar novamente individualmente:",
     stat_sharpe: "Índice de Sharpe",
     stat_cvar: "CVaR (95%)",
     stat_cvar_note: "Perda esperada nos piores 5% dos meses",
@@ -1203,6 +1217,9 @@ let state = {
   validationCache:{},
   activeAddType:"equity",
   selectedBenchmarks: new Set(["SPY","BOVA11.SA","I-Bond_fi","CDB_fi"]),
+  prewarmStart:null,   // set by prewarmPresets() once fetching completes
+  prewarmEnd:null,
+  compMode:'absolute', // composition chart mode: 'absolute' | 'pct'
 };
 
 // ================================================================
@@ -3046,7 +3063,15 @@ function renderResults(result){
       <div class="chart-card">
         <div class="chart-card-header">
           <span class="chart-card-title">${t('chart_composition')}</span>
-          <div class="chart-legend" id="composition-legend"></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="pill-toggle" id="comp-mode-toggle" style="display:inline-flex;border:1px solid var(--border);border-radius:20px;overflow:hidden;font-size:11px">
+              <button class="comp-mode-btn active" data-mode="absolute"
+                style="padding:3px 10px;border:none;background:var(--accent);color:#111;cursor:pointer;font-weight:700">${t('comp_absolute')}</button>
+              <button class="comp-mode-btn" data-mode="pct"
+                style="padding:3px 10px;border:none;background:transparent;color:var(--muted2);cursor:pointer">${t('comp_pct')}</button>
+            </div>
+            <div class="chart-legend" id="composition-legend"></div>
+          </div>
         </div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart-composition"></canvas></div>
       </div>
@@ -3251,7 +3276,11 @@ function drawFXChart(result){
   );
 }
 
-function drawCompositionChart(result){
+function drawCompositionChart(result, mode){
+  // mode: 'absolute' (default stacked $) or 'pct' (100% stacked %)
+  if(!mode) mode=state.compMode||'absolute';
+  state.compMode=mode;
+
   const{timeline,assetResults}=result;
   const isUSD=state.viewCur==='USD';
   const canvas=document.getElementById('chart-composition');if(!canvas)return;
@@ -3266,10 +3295,10 @@ function drawCompositionChart(result){
   // Asset colors palette
   const PALETTE=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f','#5eead4','#f472b6'];
 
-  // For each asset, compute its share of the portfolio value at each sampled date
-  const datasets=assetResults.map((ar,i)=>{
+  // For each asset, compute its value at each sampled date
+  const rawData=assetResults.map(ar=>{
     const priceMap=ar.priceMap;
-    const data=sampled.map(pt=>{
+    return sampled.map(pt=>{
       const fxNow=pt.fx||5.2;
       const price=lookupPrice(priceMap,pt.date);
       const pastEvents=ar.events.filter(e=>e.date<=pt.date);
@@ -3279,9 +3308,21 @@ function drawCompositionChart(result){
       const valUSD=(ar.type==='fi'&&ar.fiCur==='BRL')?(nativeVal/fxNow):nativeVal;
       return isUSD?valUSD:valUSD*fxNow;
     });
+  });
+
+  // For 100% mode: convert to percentage of total at each time point
+  const chartData = mode==='pct'
+    ? rawData.map((series,_ai)=>series.map((v,ti)=>{
+        const total=rawData.reduce((a,s)=>a+s[ti],0);
+        return total>0?(v/total)*100:0;
+      }))
+    : rawData;
+
+  const datasets=assetResults.map((ar,i)=>{
     const color=PALETTE[i%PALETTE.length];
     return{
-      label:ar.sym,data,
+      label:ar.sym,
+      data:chartData[i],
       backgroundColor:color+'cc',
       borderColor:color,
       borderWidth:1,fill:true,
@@ -3289,6 +3330,7 @@ function drawCompositionChart(result){
     };
   });
 
+  const isPct=mode==='pct';
   state.charts['chart-composition']=new Chart(ctx,{
     type:'line',
     data:{labels,datasets},
@@ -3301,17 +3343,26 @@ function drawCompositionChart(result){
           ...CD.plugins.tooltip,
           mode:'index',intersect:false,
           callbacks:{
-            label:ctx=>{
+            label:c=>{
+              if(isPct) return` ${c.dataset.label}: ${fmt(c.parsed.y,1)}%`;
               const cur=isUSD?'$':'R$';
-              return` ${ctx.dataset.label}: ${cur}${fmtK(ctx.parsed.y)}`;
-            }
+              return` ${c.dataset.label}: ${cur}${fmtK(c.parsed.y)}`;
+            },
+            ...(isPct ? {afterBody:items=>{
+              const total=items.reduce((a,it)=>a+it.parsed.y,0);
+              return[`Total: ${fmt(total,1)}%`];
+            }} : {})
           }
         }
       },
       scales:{
         x:{...CD.scales.x,stacked:true},
         y:{...CD.scales.y,stacked:true,
-          ticks:{...CD.scales.y.ticks,callback:v=>isUSD?'$'+fmtK(v):'R$'+fmtK(v)}}
+          ...(isPct?{min:0,max:100}:{}),
+          ticks:{...CD.scales.y.ticks,
+            callback:v=>isPct?fmt(v,0)+'%':(isUSD?'$'+fmtK(v):'R$'+fmtK(v))
+          }
+        }
       }
     }
   });
@@ -3323,6 +3374,32 @@ function drawCompositionChart(result){
       const color=PALETTE[i%PALETTE.length];
       return`<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${ar.sym}</span>`;
     }).join('');
+  }
+
+  // Wire toggle buttons (idempotent — only wire once per tab open)
+  const toggle=document.getElementById('comp-mode-toggle');
+  if(toggle&&!toggle.dataset.wired){
+    toggle.dataset.wired='1';
+    toggle.querySelectorAll('.comp-mode-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const m=btn.dataset.mode;
+        toggle.querySelectorAll('.comp-mode-btn').forEach(b=>{
+          const active=b.dataset.mode===m;
+          b.style.background=active?'var(--accent)':'transparent';
+          b.style.color=active?'#111':'var(--muted2)';
+          b.style.fontWeight=active?'700':'400';
+          b.classList.toggle('active',active);
+        });
+        drawCompositionChart(result,m);
+      });
+    });
+    // Sync active state on initial render
+    toggle.querySelectorAll('.comp-mode-btn').forEach(b=>{
+      const active=b.dataset.mode===mode;
+      b.style.background=active?'var(--accent)':'transparent';
+      b.style.color=active?'#111':'var(--muted2)';
+      b.style.fontWeight=active?'700':'400';
+    });
   }
 }
 
@@ -3857,12 +3934,58 @@ async function runSimulation(){
 
     setTimeout(()=>{
       renderResults(result);
-      // Show per-ticker fetch errors as non-fatal warnings inside results
+      // Show per-ticker fetch errors with individual Retry buttons
       if(fetchErrors.length){
         const errBox=document.createElement('div');
         errBox.className='ticker-error';
-        errBox.innerHTML=`<strong>${t('warn_some_failed')}</strong><br>${fetchErrors.map(e=>`<strong>${e.sym}:</strong> ${e.msg.split('\n')[0]}`).join('<br>')}`;
+        errBox.id='fetch-error-box';
+        errBox.innerHTML=`<strong>${t('warn_some_failed_retry')}</strong><br>`+
+          fetchErrors.map(fe=>`
+            <span style="display:inline-flex;align-items:center;gap:6px;margin-top:6px">
+              <strong>${fe.sym}:</strong> ${fe.msg.split('\n')[0]}
+              <button class="btn-retry-ticker" data-sym="${fe.sym}"
+                style="padding:2px 8px;font-size:10px;border-radius:4px;cursor:pointer;
+                       background:var(--gold);color:#111;border:none;font-weight:700">
+                ${t('retry_ticker')(fe.sym)}
+              </button>
+            </span>`).join('<br>');
         $('panel-results').prepend(errBox);
+
+        // Wire retry buttons
+        errBox.querySelectorAll('.btn-retry-ticker').forEach(retryBtn=>{
+          retryBtn.addEventListener('click',async ()=>{
+            const sym=retryBtn.dataset.sym;
+            const tk=state.tickers.find(x=>x.sym===sym);
+            if(!tk) return;
+            retryBtn.disabled=true;
+            retryBtn.textContent='…';
+            try{
+              let pairs=await fetchYahooWithRetry(sym,startDate,endDate,3,(s,att)=>{
+                retryBtn.textContent=`↺ ${att}/2`;
+              });
+              pairs=applyExpenseRatio(pairs,getExpenseRatio(sym));
+              // Add to result's tickerData and re-run DCA
+              const newTickerData=[...tickerData,{sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs}];
+              const newWeights=tickers.map(t2=>t2.wt/(tickers.reduce((a,x)=>a+x.wt,0)||100));
+              const newResult=runDCA({tickerData:newTickerData,fxPairs,investDates,amtUSD,amtBRL,weights:newWeights});
+              const _yr=(new Date(endDate)-new Date(startDate))/(365.25*86400000);
+              const _l=newResult.timeline[newResult.timeline.length-1];
+              if(_l&&newResult.totalInvUSD>0&&_yr>0.1){
+                newResult.cagrUSD=(Math.pow(_l.valueUSD/newResult.totalInvUSD,1/_yr)-1)*100;
+                newResult.cagrBRL=(Math.pow(_l.valueBRL/newResult.totalInvBRL,1/_yr)-1)*100;
+              }
+              state.result=newResult;
+              // Remove this ticker's row from the error box
+              retryBtn.closest('span').remove();
+              if(!errBox.querySelectorAll('.btn-retry-ticker').length) errBox.remove();
+              renderResults(newResult);
+            }catch(e2){
+              retryBtn.disabled=false;
+              retryBtn.textContent=t('retry_ticker')(sym);
+              retryBtn.title=e2.message;
+            }
+          });
+        });
       }
     },200);
 
@@ -3968,6 +4091,105 @@ document.getElementById('btn-equal-weights')?.addEventListener('click', () => {
   state.tickers.forEach((tk, i) => tk.wt = i === n-1 ? 100 - w*(n-1) : w);
   renderHoldings();
 });
+
+// ================================================================
+//  PRESET CACHE PRE-WARMING
+//  Silently pre-fetch all equity tickers used by presets so that
+//  clicking a preset button runs the simulation instantly (from cache).
+// ================================================================
+(async function prewarmPresets(){
+  // Default date window: last 5 years
+  const end=new Date();
+  const start=new Date();
+  start.setFullYear(start.getFullYear()-5);
+  const startDate=start.toISOString().slice(0,10);
+  const endDate=end.toISOString().slice(0,10);
+
+  // Collect unique equity symbols across all presets
+  const syms=[...new Set(
+    PRESETS.flatMap(p=>p.tickers.filter(tk=>tk.type!=='fi').map(tk=>tk.sym))
+  )];
+
+  // Mark preset buttons as "loading" while we warm up
+  function markPresetBtns(sym, done){
+    document.querySelectorAll('#presets .preset').forEach(btn=>{
+      const p=PRESETS.find(x=>x.label===btn.dataset.preset);
+      if(!p) return;
+      const hasSym=p.tickers.some(tk=>tk.sym===sym);
+      if(!hasSym) return;
+      // Check if all equities for this preset are now cached
+      const allReady=p.tickers.filter(tk=>tk.type!=='fi').every(tk=>
+        !!priceCache[`${tk.sym}_${startDate}_${endDate}`]
+      );
+      if(allReady){
+        btn.dataset.prewarm='1';
+        btn.title=t('preset_ready');
+        const badge=btn.querySelector('.preset-badge');
+        if(badge){badge.textContent='⚡';badge.style.opacity='1';}
+      }
+    });
+  }
+
+  // Store the prewarm dates so runSimulation can use them
+  state.prewarmStart=startDate;
+  state.prewarmEnd=endDate;
+
+  // Also pre-fetch FX for this window
+  fetchFXCached(startDate,endDate).catch(()=>{});
+
+  // Fetch symbols sequentially (low priority — don't overwhelm the proxy)
+  for(const sym of syms){
+    try{
+      await fetchYahooWithRetry(sym,startDate,endDate,2);
+      markPresetBtns(sym,true);
+    }catch(e){
+      // Silently ignore — preset will still work, just needs fetch at click time
+    }
+    // Small gap between requests to be kind to CORS proxy
+    await new Promise(r=>setTimeout(r,400));
+  }
+})();
+
+// Wire preset buttons to use prewarm dates when available
+// (Override renderSidebar preset click handler with prewarm-aware version)
+function wirePresetBtns(){
+  document.querySelectorAll('#presets .preset').forEach(btn=>{
+    // Remove previous listeners by cloning
+    const fresh=btn.cloneNode(true);
+    btn.parentNode.replaceChild(fresh,btn);
+    fresh.addEventListener('click',async ()=>{
+      const p=PRESETS.find(x=>x.label===fresh.dataset.preset);
+      if(!p) return;
+      state.tickers=p.tickers.map(tk=>({...tk}));
+      state.editingIdx=null;
+      renderHoldings();
+
+      // If prewarm dates are available and data is cached for this preset,
+      // auto-populate the date fields and run simulation immediately
+      const pw=state.prewarmStart;
+      const pe=state.prewarmEnd;
+      if(pw&&pe&&fresh.dataset.prewarm==='1'){
+        // Only auto-fill dates if user hasn't customised them
+        const startInp=$('start-date'),endInp=$('end-date');
+        if(startInp&&endInp&&(!startInp.value||startInp.dataset.auto==='1')){
+          startInp.value=pw;startInp.dataset.auto='1';
+          endInp.value=pe;endInp.dataset.auto='1';
+        }
+        if($('amt-usd')&&!parseFloat($('amt-usd').value)&&!parseFloat($('amt-brl')?.value)) $('amt-usd').value='100';
+        runSimulation();
+      }
+    });
+    // Add a small badge element for the ⚡ indicator
+    if(!fresh.querySelector('.preset-badge')){
+      const badge=document.createElement('span');
+      badge.className='preset-badge';
+      badge.style.cssText='margin-left:4px;font-size:9px;opacity:0;transition:opacity .3s';
+      fresh.appendChild(badge);
+    }
+  });
+}
+// Call immediately after renderSidebar has run
+wirePresetBtns();
 </script>
 </body>
 </html>
