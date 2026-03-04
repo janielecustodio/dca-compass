@@ -3236,6 +3236,10 @@ function renderResults(result){
   });
 
   drawMainChart(result);
+
+  // Pre-fetch VIX/CDX data in the background so it's ready when the user clicks the tab.
+  // renderVIX has its own "rendered" guard so clicking the tab later is a no-op.
+  setTimeout(()=>renderVIX(result), 800);
 }
 
 // ================================================================
@@ -3908,27 +3912,50 @@ async function runSimulation(){
 
   try{
     const tickerData=[];
-    for(const tk of tickers){
-      $('loading-ticker').textContent=t('loading_ticker')(tk.sym);
-      let pairs;
-      if(tk.type==='fi'){
-        pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
-      } else {
-        try{
-          // Use retry wrapper — up to 3 attempts with backoff
-          pairs=await fetchYahooWithRetry(tk.sym,startDate,endDate,3,(sym,attempt)=>{
-            $('loading-ticker').textContent=`↺ RETRY ${sym} (${attempt}/2)…`;
-          });
-          // Apply expense ratio drag to raw price series
-          pairs=applyExpenseRatio(pairs, getExpenseRatio(tk.sym));
-        }catch(e){
-          fetchErrors.push({sym:tk.sym,msg:e.message});
-          skipped.push(tk.sym);
-          continue;
-        }
-      }
+
+    // Split into: FI (instant, no fetch), cached equity (instant from memory), uncached equity (needs fetch)
+    const fiTickers=tickers.filter(tk=>tk.type==='fi');
+    const equityTks=tickers.filter(tk=>tk.type!=='fi');
+    const cachedEq=equityTks.filter(tk=>!!priceCache[`${tk.sym}_${startDate}_${endDate}`]);
+    const uncachedEq=equityTks.filter(tk=>!priceCache[`${tk.sym}_${startDate}_${endDate}`]);
+
+    // Resolve FI and already-cached equities immediately
+    for(const tk of fiTickers){
+      const pairs=generateFIPairs(startDate,endDate,tk.fiRate||10,tk.sym);
+      if(pairs) tickerData.push({sym:tk.sym,flag:tk.flag,type:'fi',fiCur:tk.fiCur,pairs});
+    }
+    for(const tk of cachedEq){
+      const raw=priceCache[`${tk.sym}_${startDate}_${endDate}`];
+      const pairs=applyExpenseRatio(raw,getExpenseRatio(tk.sym));
+      if(pairs) tickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
       markProgress(tk.sym);
-      tickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
+    }
+
+    // Fetch uncached equities in parallel — all at once, no sequential waiting
+    if(uncachedEq.length){
+      $('loading-ticker').textContent=uncachedEq.length===1
+        ? t('loading_ticker')(uncachedEq[0].sym)
+        : `Fetching ${uncachedEq.length} tickers…`;
+
+      const results=await Promise.allSettled(
+        uncachedEq.map(tk=>
+          fetchYahooWithRetry(tk.sym,startDate,endDate,3,(sym,attempt)=>{
+            $('loading-ticker').textContent=`↺ RETRY ${sym} (${attempt}/2)…`;
+          })
+        )
+      );
+
+      results.forEach((res,i)=>{
+        const tk=uncachedEq[i];
+        if(res.status==='fulfilled'){
+          const pairs=applyExpenseRatio(res.value,getExpenseRatio(tk.sym));
+          tickerData.push({sym:tk.sym,flag:tk.flag,type:tk.type||'equity',fiCur:tk.fiCur,pairs});
+          markProgress(tk.sym);
+        } else {
+          fetchErrors.push({sym:tk.sym,msg:res.reason?.message||'Fetch failed'});
+          skipped.push(tk.sym);
+        }
+      });
     }
 
     // If all equity tickers failed, abort
@@ -4145,6 +4172,9 @@ document.getElementById('btn-equal-weights')?.addEventListener('click', () => {
 //  clicking a preset button runs the simulation instantly (from cache).
 // ================================================================
 (async function prewarmPresets(){
+  // Wait 4s before starting — let real user interactions get priority on the CORS proxy
+  await new Promise(r=>setTimeout(r,4000));
+
   // Default date window: last 5 years
   const end=new Date();
   const start=new Date();
@@ -4152,19 +4182,19 @@ document.getElementById('btn-equal-weights')?.addEventListener('click', () => {
   const startDate=start.toISOString().slice(0,10);
   const endDate=end.toISOString().slice(0,10);
 
+  // Store the prewarm dates so wirePresetBtns can use them
+  state.prewarmStart=startDate;
+  state.prewarmEnd=endDate;
+
   // Collect unique equity symbols across all presets
   const syms=[...new Set(
     PRESETS.flatMap(p=>p.tickers.filter(tk=>tk.type!=='fi').map(tk=>tk.sym))
   )];
 
-  // Mark preset buttons as "loading" while we warm up
-  function markPresetBtns(sym, done){
+  function markPresetBtns(sym){
     document.querySelectorAll('#presets .preset').forEach(btn=>{
       const p=PRESETS.find(x=>x.label===btn.dataset.preset);
       if(!p) return;
-      const hasSym=p.tickers.some(tk=>tk.sym===sym);
-      if(!hasSym) return;
-      // Check if all equities for this preset are now cached
       const allReady=p.tickers.filter(tk=>tk.type!=='fi').every(tk=>
         !!priceCache[`${tk.sym}_${startDate}_${endDate}`]
       );
@@ -4177,23 +4207,20 @@ document.getElementById('btn-equal-weights')?.addEventListener('click', () => {
     });
   }
 
-  // Store the prewarm dates so runSimulation can use them
-  state.prewarmStart=startDate;
-  state.prewarmEnd=endDate;
-
-  // Also pre-fetch FX for this window
+  // Also pre-fetch FX silently
   fetchFXCached(startDate,endDate).catch(()=>{});
 
-  // Fetch symbols sequentially (low priority — don't overwhelm the proxy)
-  for(const sym of syms){
-    try{
-      await fetchYahooWithRetry(sym,startDate,endDate,2);
-      markPresetBtns(sym,true);
-    }catch(e){
-      // Silently ignore — preset will still work, just needs fetch at click time
-    }
-    // Small gap between requests to be kind to CORS proxy
-    await new Promise(r=>setTimeout(r,400));
+  // Fetch in batches of 2 with a small gap — avoids flooding the CORS proxy
+  // but still finishes faster than pure sequential
+  const BATCH=2, GAP=600;
+  for(let i=0;i<syms.length;i+=BATCH){
+    const batch=syms.slice(i,i+BATCH);
+    await Promise.allSettled(batch.map(sym=>
+      fetchYahooWithRetry(sym,startDate,endDate,1) // 1 attempt only — low-priority
+        .then(()=>markPresetBtns(sym))
+        .catch(()=>{}) // silent fail
+    ));
+    if(i+BATCH<syms.length) await new Promise(r=>setTimeout(r,GAP));
   }
 })();
 
