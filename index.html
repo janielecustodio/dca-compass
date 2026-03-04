@@ -1308,16 +1308,67 @@ function loadState(){
 }
 
 // ================================================================
-//  FETCH CACHE
+//  FETCH CACHE  (in-memory + localStorage persistence)
 // ================================================================
 const priceCache = {}; // key: `${sym}_${startDate}_${endDate}` => pairs[]
 const fxCache = {};    // key: `${startDate}_${endDate}` => pairs[]
 
+// ---- Persistent cache helpers ----
+const DISK_CACHE_KEY = 'dca_price_cache';
+const CACHE_TTL_MS   = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_MAX_BYTES = 3 * 1024 * 1024;          // 3 MB soft cap
+
+function _diskCacheLoad(){
+  // Restore all non-expired entries from localStorage into priceCache / fxCache
+  try{
+    const raw = localStorage.getItem(DISK_CACHE_KEY);
+    if(!raw) return;
+    const store = JSON.parse(raw);
+    const now = Date.now();
+    let evicted = 0;
+    for(const [key, entry] of Object.entries(store)){
+      if(!entry || !entry.data || (now - (entry.ts||0)) > CACHE_TTL_MS){ evicted++; continue; }
+      // Distinguish FX keys (no underscore before date) from price keys
+      if(key.startsWith('fx_')) fxCache[key.slice(3)] = entry.data;
+      else                       priceCache[key]        = entry.data;
+    }
+    if(evicted) _diskCacheSave(); // prune stale entries immediately
+  }catch(e){}
+}
+
+function _diskCacheSave(){
+  try{
+    const store = {};
+    const now = Date.now();
+    for(const [k,v] of Object.entries(priceCache)) store[k]          = {data:v, ts:now};
+    for(const [k,v] of Object.entries(fxCache))    store['fx_'+k]    = {data:v, ts:now};
+    let json = JSON.stringify(store);
+    // If over the size cap, evict entries until we fit (drop oldest first)
+    if(json.length > CACHE_MAX_BYTES){
+      const entries = Object.entries(store).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
+      while(json.length > CACHE_MAX_BYTES && entries.length){
+        const [key] = entries.shift();
+        delete store[key];
+        json = JSON.stringify(store);
+      }
+    }
+    localStorage.setItem(DISK_CACHE_KEY, json);
+  }catch(e){
+    // localStorage full or unavailable — silently ignore
+    try{ localStorage.removeItem(DISK_CACHE_KEY); }catch(_){}
+  }
+}
+
+// Load persisted cache immediately (before any fetches)
+_diskCacheLoad();
+
+// ---- Fetch functions ----
 async function fetchYahooCached(sym, startDate, endDate) {
   const key = `${sym}_${startDate}_${endDate}`;
   if (priceCache[key]) return priceCache[key];
   const pairs = await fetchYahoo(sym, startDate, endDate);
   priceCache[key] = pairs;
+  _diskCacheSave();
   return pairs;
 }
 
@@ -1335,6 +1386,7 @@ async function fetchYahooWithRetry(sym, startDate, endDate, maxRetries=3, onRetr
       }
       const pairs = await fetchYahoo(sym, startDate, endDate);
       priceCache[key] = pairs;
+      _diskCacheSave();
       return pairs;
     }catch(e){
       lastErr = e;
@@ -1351,7 +1403,7 @@ async function fetchFXCached(startDate, endDate) {
   let pairs = [];
   try { pairs = await fetchYahoo('BRL=X', startDate, endDate); }
   catch(e) { try { pairs = await fetchYahoo('USDBRL=X', startDate, endDate); } catch(e2) {} }
-  if (pairs.length) fxCache[key] = pairs;
+  if (pairs.length){ fxCache[key] = pairs; _diskCacheSave(); }
   return pairs;
 }
 
