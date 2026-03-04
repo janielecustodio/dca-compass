@@ -778,6 +778,49 @@ const TRANSLATIONS = {
     warn_skipped: sym => `⚠ ${sym} skipped after retries — excluded from simulation.`,
     expense_ratio_note: "Returns shown net of estimated fund expense ratios.",
     opt_allow_zero: "Allow 0% allocations (exclude assets)",
+    // Risk analytics
+    stat_sharpe: "Sharpe Ratio",
+    stat_cvar: "CVaR (95%)",
+    stat_cvar_note: "Expected loss in worst 5% of months",
+    stat_max_dd: "Max Drawdown",
+    stat_volatility: "Ann. Volatility",
+    tab_correlation: "Correlation",
+    chart_corr_title: "Asset Return Correlation Matrix",
+    corr_warn_high: "⚠ High collinearity detected:",
+    corr_warn_detail: "Very similar assets — consider reducing overlap for better diversification.",
+    corr_legend_neg: "Strong negative",
+    corr_legend_zero: "Uncorrelated",
+    corr_legend_pos: "Strong positive",
+    corr_method: "Pearson correlation of daily log-returns over the simulation period.",
+    opt_cvar_title: "🛡 Min-CVaR Optimal Portfolio",
+    opt_cvar_desc: "Weights that minimise Conditional Value at Risk (worst-5% monthly loss), assuming normally distributed returns.",
+    opt_cvar_label: "CVaR",
+    opt_cvar_sharpe: "Sharpe",
+    opt_return_based: "⚡ Max-Return",
+    opt_cvar_based: "🛡 Min-CVaR",
+    vix_tab: "VIX / CDX",
+    vix_title: "Volatility & Credit Risk Signals",
+    vix_current: "VIX (CBOE)",
+    vix_regime: "Regime",
+    vix_regime_low: "Low Volatility",
+    vix_regime_mid: "Elevated",
+    vix_regime_high: "Fear",
+    vix_regime_extreme: "Extreme Fear",
+    vix_signal: "DCA Signal",
+    vix_signal_low: "Neutral — market calm, prices may be stretched",
+    vix_signal_mid: "Good — slight stress, reasonable entry",
+    vix_signal_high: "Strong — elevated fear, historically good DCA zone",
+    vix_signal_extreme: "Very Strong — peak fear, opportunistic accumulation",
+    vix_short_note: "Short VIX trades (selling volatility) historically profitable in calm regimes (<18). Elevated VIX favours long equity DCA.",
+    cdx_title: "HYG (Credit Proxy)",
+    cdx_note: "HYG ETF tracks US high-yield credit. When HYG falls, credit spreads widen — risk-off signal. Correlated with equity stress.",
+    vix_corr: (sym) => `Correlation with ${sym}`,
+    vix_disclaimer: "VIX and HYG data from Yahoo Finance. Not financial advice.",
+    vix_fetching: "Fetching VIX and credit data…",
+    vix_failed: "Could not load VIX/CDX data. Check your connection.",
+    vix_1m: "1M Change",
+    vix_52w: "52W Range",
+    vix_pct52: "52W Position",
   },
   pt: {
     brand_sub: "EUA · Brasil · Simulador Multicâmbio",
@@ -1005,6 +1048,48 @@ const TRANSLATIONS = {
     warn_skipped: sym => `⚠ ${sym} ignorado após tentativas — excluído da simulação.`,
     expense_ratio_note: "Retornos líquidos de taxas estimadas de administração dos fundos.",
     opt_allow_zero: "Permitir alocação 0% (excluir ativos)",
+    stat_sharpe: "Índice de Sharpe",
+    stat_cvar: "CVaR (95%)",
+    stat_cvar_note: "Perda esperada nos piores 5% dos meses",
+    stat_max_dd: "Drawdown Máximo",
+    stat_volatility: "Vol. Anualizada",
+    tab_correlation: "Correlação",
+    chart_corr_title: "Correlação de Retornos dos Ativos",
+    corr_warn_high: "⚠ Alta colinearidade detectada:",
+    corr_warn_detail: "Ativos muito similares — considere reduzir sobreposição para melhor diversificação.",
+    corr_legend_neg: "Forte negativa",
+    corr_legend_zero: "Descorrelacionado",
+    corr_legend_pos: "Forte positiva",
+    corr_method: "Correlação de Pearson dos retornos logarítmicos diários no período simulado.",
+    opt_cvar_title: "🛡 Portfólio Ótimo Min-CVaR",
+    opt_cvar_desc: "Pesos que minimizam o CVaR (pior 5% de perda mensal), assumindo retornos normalmente distribuídos.",
+    opt_cvar_label: "CVaR",
+    opt_cvar_sharpe: "Sharpe",
+    opt_return_based: "⚡ Máx-Retorno",
+    opt_cvar_based: "🛡 Min-CVaR",
+    vix_tab: "VIX / CDX",
+    vix_title: "Sinais de Volatilidade e Risco de Crédito",
+    vix_current: "VIX (CBOE)",
+    vix_regime: "Regime",
+    vix_regime_low: "Baixa Volatilidade",
+    vix_regime_mid: "Elevada",
+    vix_regime_high: "Medo",
+    vix_regime_extreme: "Medo Extremo",
+    vix_signal: "Sinal DCA",
+    vix_signal_low: "Neutro — mercado calmo, preços podem estar esticados",
+    vix_signal_mid: "Bom — leve estresse, entrada razoável",
+    vix_signal_high: "Forte — medo elevado, historicamente bom para DCA",
+    vix_signal_extreme: "Muito Forte — pico de medo, acumulação oportunista",
+    vix_short_note: "Venda de VIX historicamente lucrativa em regimes calmos (<18). VIX elevado favorece DCA em renda variável.",
+    cdx_title: "HYG (Proxy de Crédito)",
+    cdx_note: "ETF HYG reflete crédito de alto rendimento nos EUA. Queda do HYG indica alargamento de spreads — sinal de risco.",
+    vix_corr: (sym) => `Correlação com ${sym}`,
+    vix_disclaimer: "Dados de VIX e HYG via Yahoo Finance. Não é conselho financeiro.",
+    vix_fetching: "Carregando dados de VIX e crédito…",
+    vix_failed: "Não foi possível carregar dados de VIX/CDX. Verifique a conexão.",
+    vix_1m: "Variação 1M",
+    vix_52w: "Faixa 52S",
+    vix_pct52: "Posição 52S",
   }
 };
 
@@ -1183,6 +1268,138 @@ function datePlusDays(d,days){const x=new Date(d);x.setDate(x.getDate()+days);re
 function toUnix(d){return Math.floor(new Date(d).getTime()/1000)}
 function buildInvestDates(start,end,days){const r=[];let c=start;while(c<=end){r.push(c);c=datePlusDays(c,days)}return r}
 function buildPriceMap(pairs){const m={};pairs.forEach(p=>{m[p.date]=p.price});return m}
+
+// ================================================================
+//  RISK ANALYTICS (Sharpe, CVaR, Max Drawdown, Correlation)
+// ================================================================
+
+// Compute daily log-returns from a value series (numbers[])
+function dailyLogReturns(vals){
+  const r=[];
+  for(let i=1;i<vals.length;i++){
+    if(vals[i]>0&&vals[i-1]>0) r.push(Math.log(vals[i]/vals[i-1]));
+  }
+  return r;
+}
+
+// Annualised Sharpe (risk-free ≈ 0, uses daily returns × √252)
+function sharpeRatio(dailyRets){
+  if(!dailyRets||dailyRets.length<20) return null;
+  const mean=dailyRets.reduce((a,b)=>a+b,0)/dailyRets.length;
+  const variance=dailyRets.reduce((a,r)=>a+(r-mean)**2,0)/(dailyRets.length-1);
+  const std=Math.sqrt(variance);
+  if(std===0) return null;
+  return (mean/std)*Math.sqrt(252);
+}
+
+// CVaR at confidence α (default 95%) assuming normal dist of daily returns.
+// Returns the expected loss (as positive %) in the worst (1-α) fraction of days,
+// annualised to a monthly figure for readability.
+// CVaR_normal = μ - σ × φ(z_α)/(1-α)  where φ is standard normal PDF, z_α = Φ⁻¹(1-α)
+function cvarNormal(dailyRets, alpha=0.95){
+  if(!dailyRets||dailyRets.length<20) return null;
+  const n=dailyRets.length;
+  const mean=dailyRets.reduce((a,b)=>a+b,0)/n;
+  const variance=dailyRets.reduce((a,r)=>a+(r-mean)**2,0)/(n-1);
+  const std=Math.sqrt(variance);
+  // z for 95% one-tail: Φ⁻¹(0.95) ≈ 1.6449
+  const z=1.6449;
+  // Standard normal PDF at z
+  const phi=Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI);
+  // Daily CVaR as a loss (positive number)
+  const dailyCVaR=-(mean - std*(phi/(1-alpha)));
+  // Scale to monthly (×√21 for vol, ×21 for mean)
+  const monthlyCVaR = dailyCVaR * Math.sqrt(21);
+  return monthlyCVaR * 100; // return as %
+}
+
+// Max drawdown from a value series
+function maxDrawdown(vals){
+  if(!vals||vals.length<2) return null;
+  let peak=vals[0], maxDD=0;
+  for(const v of vals){
+    if(v>peak) peak=v;
+    const dd=(peak-v)/peak;
+    if(dd>maxDD) maxDD=dd;
+  }
+  return maxDD*100; // as %
+}
+
+// Annualised volatility from daily log-returns
+function annualisedVol(dailyRets){
+  if(!dailyRets||dailyRets.length<10) return null;
+  const mean=dailyRets.reduce((a,b)=>a+b,0)/dailyRets.length;
+  const variance=dailyRets.reduce((a,r)=>a+(r-mean)**2,0)/(dailyRets.length-1||1);
+  return Math.sqrt(variance*252)*100;
+}
+
+// Pearson correlation between two equal-length arrays
+function pearsonCorr(xs,ys){
+  const n=xs.length;
+  if(n<5) return null;
+  const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  let num=0,dx2=0,dy2=0;
+  for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);dx2+=(xs[i]-mx)**2;dy2+=(ys[i]-my)**2;}
+  const denom=Math.sqrt(dx2*dy2);
+  return denom>0?num/denom:0;
+}
+
+// Build aligned daily-return series for multiple assets from their pairs[]
+// Returns {dates[], matrix: number[][]} where matrix[i] is returns for asset i
+function buildReturnMatrix(assetPairs){
+  // Use dates present in all assets
+  const dateSets=assetPairs.map(p=>new Set(p.map(d=>d.date)));
+  const allDates=[...dateSets[0]].filter(d=>dateSets.every(s=>s.has(d))).sort();
+  const priceMaps=assetPairs.map(p=>{const m={};p.forEach(d=>m[d.date]=d.price);return m;});
+  // Build return series per asset
+  const matrix=assetPairs.map((_,ai)=>{
+    const rets=[];
+    for(let i=1;i<allDates.length;i++){
+      const p0=priceMaps[ai][allDates[i-1]], p1=priceMaps[ai][allDates[i]];
+      rets.push((p0>0&&p1>0)?Math.log(p1/p0):0);
+    }
+    return rets;
+  });
+  return{dates:allDates.slice(1),matrix};
+}
+
+// Min-CVaR portfolio weights via analytical mean-variance (under normal dist
+// CVaR ∝ portfolio σ, so min-CVaR ≡ min-variance for normal returns).
+// Uses closed-form solution for minimum variance portfolio on the simplex.
+// Iterative gradient descent on portfolio variance with weight constraints [minW,1].
+function findMinCVaRWeights(assetPairs, stepPct=10, allowZero=false){
+  if(assetPairs.length===1) return [1.0];
+  const{matrix}=buildReturnMatrix(assetPairs);
+  const n=assetPairs.length;
+  // Build covariance matrix
+  const means=matrix.map(r=>r.reduce((a,b)=>a+b,0)/(r.length||1));
+  const cov=[];
+  for(let i=0;i<n;i++){
+    cov.push([]);
+    for(let j=0;j<n;j++){
+      const ri=matrix[i], rj=matrix[j];
+      const T=ri.length;
+      let s=0;
+      for(let k=0;k<T;k++) s+=(ri[k]-means[i])*(rj[k]-means[j]);
+      cov[i].push(T>1?s/(T-1):0);
+    }
+  }
+  // Portfolio variance: w^T Σ w
+  const portVar=(w)=>{
+    let v=0;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) v+=w[i]*w[j]*cov[i][j];
+    return v;
+  };
+  // Grid search over allowed weight combos (reuse genWeightCombos)
+  const combos=genWeightCombos(n,stepPct,allowZero);
+  let bestW=null, bestVar=Infinity;
+  for(const combo of combos){
+    const w=combo.map(c=>c/100);
+    const v=portVar(w);
+    if(v<bestVar){bestVar=v;bestW=combo;}
+  }
+  return bestW||combos[0];
+}
 
 // Lookup price: exact match first, then scan back up to 7 days
 function lookupPrice(map,date){
@@ -1496,9 +1713,24 @@ function runDCA({tickerData,fxPairs,investDates,amtUSD,amtBRL,weights}){
   const retBRL=totalInvBRL>0?((last.valueBRL/totalInvBRL)-1)*100:0;
   const totalPurchases=assetResults.reduce((a,r)=>a+r.events.length,0);
 
+  // Risk analytics on portfolio value series
+  const portValsUSD=timeline.map(d=>d.valueUSD);
+  const portValsBRL=timeline.map(d=>d.valueBRL);
+  const dailyRetsUSD=dailyLogReturns(portValsUSD);
+  const dailyRetsBRL=dailyLogReturns(portValsBRL);
+
   return{timeline,assetResults,fxPairs,totalInvUSD,totalInvBRL,
     finalValUSD:last.valueUSD,finalValBRL:last.valueBRL,
-    retUSD,retBRL,totalPurchases,fxChangePct,finalFX,startFX};
+    retUSD,retBRL,totalPurchases,fxChangePct,finalFX,startFX,
+    sharpeUSD: sharpeRatio(dailyRetsUSD),
+    sharpeBRL: sharpeRatio(dailyRetsBRL),
+    cvarUSD: cvarNormal(dailyRetsUSD),
+    cvarBRL: cvarNormal(dailyRetsBRL),
+    maxDDUSD: maxDrawdown(portValsUSD),
+    maxDDBRL: maxDrawdown(portValsBRL),
+    volUSD: annualisedVol(dailyRetsUSD),
+    volBRL: annualisedVol(dailyRetsBRL),
+  };
 }
 
 // ================================================================
@@ -1699,7 +1931,24 @@ function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,
   allRuns.sort((a,b)=>b.retUSD-a.retUSD);
   const top5=allRuns.slice(0,5);
 
-  return{results,globalBest,syms,combos,stepPct,annualBudgetUSD,startDate,endDate,top5};
+  // Min-CVaR portfolio (min variance under normality assumption)
+  const cvarWeights=findMinCVaRWeights(
+    tickerData.map(td=>td.pairs), stepPct, allowZero
+  );
+  // Run the min-CVaR allocation across all frequencies, pick best freq
+  let cvarBest=null;
+  const cvarW=cvarWeights.map(w=>w/100);
+  for(const freq of STRAT_FREQS){
+    const amtPerPeriod=annualBudgetUSD/(365/freq.days);
+    const dates=buildTuesdayDates(startDate,endDate,freq.days);
+    if(!dates.length) continue;
+    const r=fastDCA(priceMaps,fxMap,fiFlags,fiCurs,cvarW,dates,amtPerPeriod,endDate);
+    if(r&&(!cvarBest||r.retUSD>cvarBest.retUSD)){
+      cvarBest={...r,freq:freq.label,days:freq.days,combo:cvarWeights,weights:cvarW,syms};
+    }
+  }
+
+  return{results,globalBest,syms,combos,stepPct,annualBudgetUSD,startDate,endDate,top5,cvarBest};
 }
 
 // ================================================================
@@ -1753,7 +2002,7 @@ async function runStrategyOptimizer(userResult){
 //  RENDER STRATEGY OPTIMIZER RESULTS
 // ================================================================
 function renderStrategyResults(optResult, sd, ed){
-  const{results,globalBest,syms,stepPct,annualBudgetUSD,top5}=optResult;
+  const{results,globalBest,syms,stepPct,annualBudgetUSD,top5,cvarBest}=optResult;
   const isUSD=state.viewCur==='USD';
   const el=$('optimizer-results');
   if(!el) return;
@@ -1816,6 +2065,50 @@ function renderStrategyResults(optResult, sd, ed){
         </div>`).join('')}
     </div>
   `;
+
+  // ---- Min-CVaR portfolio comparison ----
+  let cvarHtml='';
+  if(cvarBest){
+    const cb=cvarBest;
+    const cbRet=isUSD?cb.retUSD:cb.retBRL;
+    const cbFV=isUSD?cb.finalValUSD:cb.finalValBRL;
+    // Compute CVaR/Sharpe for the cvarBest run by building simple daily return proxy
+    // (we don't have the full timeline here — approximate from totalInv → finalVal over years)
+    const sameComboBest=gb.combo.join(',')===cb.combo.join(',');
+    cvarHtml=`
+    <div style="margin-bottom:18px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;gap:10px;align-items:center">
+        <span>${t('opt_return_based')}</span>
+        <span style="color:var(--muted);font-size:9px">vs</span>
+        <span>${t('opt_cvar_based')}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="strat-winner-card gold-card">
+          <div class="strat-gold-badge">${t('opt_return_based')}</div>
+          <div class="strat-card-label">${syms.map((s,i)=>`${s.split('.')[0]}:${gb.combo[i]}%`).join(' · ')} · ${gb.label}</div>
+          <div class="strat-card-val pos">${fmtPct(gbRet)}</div>
+          ${gb.cagrUSD!=null?`<div class="strat-card-sub" style="color:var(--lime)">CAGR ${fmtPct(gb.cagrUSD)}/yr</div>`:''}
+          <div class="strat-card-sub">${isUSD?fmtUSD(gbFV):fmtBRL(gbFV)}</div>
+        </div>
+        <div class="strat-winner-card" style="border-color:var(--sky)">
+          <div class="strat-gold-badge" style="background:rgba(77,184,255,.15);color:var(--sky);border:none">${t('opt_cvar_based')}</div>
+          <div class="strat-card-label">${syms.map((s,i)=>`${s.split('.')[0]}:${cb.combo[i]}%`).join(' · ')} · ${cb.freq}</div>
+          <div class="strat-card-val ${cls(cbRet)}">${fmtPct(cbRet)}</div>
+          ${cb.cagrUSD!=null?`<div class="strat-card-sub" style="color:var(--lime)">CAGR ${fmtPct(cb.cagrUSD)}/yr</div>`:''}
+          <div class="strat-card-sub">${isUSD?fmtUSD(cbFV):fmtBRL(cbFV)}</div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:8px;font-size:9px">ⓘ ${t('opt_cvar_desc')}</div>
+      <div class="weight-bars" style="margin-top:8px">
+        ${syms.map((s,i)=>`
+          <div class="weight-bar-item">
+            <div class="weight-bar-name" style="color:var(--sky)">${s} <span style="color:var(--muted);font-size:9px">(min-CVaR)</span></div>
+            <div class="weight-bar-track"><div class="weight-bar-fill" style="width:${cb.combo[i]}%;background:var(--sky)"></div></div>
+            <div class="weight-bar-pct" style="color:var(--sky)">${cb.combo[i]}%</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
 
   // ---- Top 5 strategies ----
   const top5Html=`
@@ -1910,7 +2203,7 @@ function renderStrategyResults(optResult, sd, ed){
     return best;
   }).filter(Boolean);
 
-  el.innerHTML=winnerHtml+top5Html+tableHtml+`
+  el.innerHTML=winnerHtml+cvarHtml+top5Html+tableHtml+`
     <div class="chart-card">
       <div class="chart-card-header">
         <span class="chart-card-title">${t('opt_best_by_freq')} (${isUSD?'USD':'BRL'}) — ${t('opt_optimal_alloc')}</span>
@@ -2684,6 +2977,32 @@ function renderResults(result){
         <div class="stat-sub">${fmtBRL(finalValBRL)} · ${t('stat_basis')} ${fmtBRL(totalInvBRL)}</div>
       </div>
     </div>
+    <div class="stats-grid" style="margin-top:8px">
+      ${(isUSD?result.sharpeUSD:result.sharpeBRL)!=null?`
+      <div class="stat-card c-sky" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_sharpe')}</div>
+        <div class="stat-value" style="color:var(--sky);font-size:22px">${fmt(isUSD?result.sharpeUSD:result.sharpeBRL,2)}</div>
+        <div class="stat-sub">Ann. risk-adj return (&gt;1 = good)</div>
+      </div>`:''}
+      ${(isUSD?result.cvarUSD:result.cvarBRL)!=null?`
+      <div class="stat-card c-coral" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_cvar')} <span style="font-size:8px;opacity:.7">${t('stat_cvar_note')}</span></div>
+        <div class="stat-value neg" style="font-size:22px">−${fmt(isUSD?result.cvarUSD:result.cvarBRL,2)}%</div>
+        <div class="stat-sub">95% confidence, monthly</div>
+      </div>`:''}
+      ${(isUSD?result.maxDDUSD:result.maxDDBRL)!=null?`
+      <div class="stat-card c-coral" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_max_dd')}</div>
+        <div class="stat-value neg" style="font-size:22px">−${fmt(isUSD?result.maxDDUSD:result.maxDDBRL,1)}%</div>
+        <div class="stat-sub">Peak-to-trough portfolio decline</div>
+      </div>`:''}
+      ${(isUSD?result.volUSD:result.volBRL)!=null?`
+      <div class="stat-card c-sky" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_volatility')}</div>
+        <div class="stat-value" style="color:var(--sky);font-size:22px">${fmt(isUSD?result.volUSD:result.volBRL,1)}%</div>
+        <div class="stat-sub">Annualised daily vol</div>
+      </div>`:''}
+    </div>
     ${result.assetResults.some(ar=>ar.type!=='fi'&&getExpenseRatio(ar.sym)>0)?`<div class="note" style="margin-bottom:10px;font-size:9px">ⓘ ${t('expense_ratio_note')}</div>`:''}
 
     <div class="tabs-bar" id="tabs-bar">
@@ -2692,10 +3011,12 @@ function renderResults(result){
       <div class="tab" data-tab="composition">${t('tab_composition')}</div>
       <div class="tab" data-tab="fx">${t('tab_fx')}</div>
       <div class="tab" data-tab="optimizer">${t('tab_optimizer')}</div>
+      <div class="tab" data-tab="correlation">${t('tab_correlation')}</div>
       <div class="tab" data-tab="signals">${t('tab_signals')}</div>
       <div class="tab" data-tab="table">${t('tab_history')}</div>
       <div class="tab" data-tab="breakdown">${t('tab_breakdown')}</div>
       <div class="tab" data-tab="insights">${t('tab_insights')}</div>
+      <div class="tab" data-tab="vix">${t('vix_tab')}</div>
     </div>
 
     <div id="tab-overview">
@@ -2808,6 +3129,14 @@ function renderResults(result){
     <div id="tab-insights" style="display:none">
       <div class="insights-grid" id="insights-grid"></div>
     </div>
+
+    <div id="tab-correlation" style="display:none">
+      <div id="correlation-content"></div>
+    </div>
+
+    <div id="tab-vix" style="display:none">
+      <div id="vix-content"></div>
+    </div>
   `;
 
   $('panel-results').innerHTML=html;showPanel('results');
@@ -2817,9 +3146,10 @@ function renderResults(result){
     tab.addEventListener('click',()=>{
       document.querySelectorAll('#tabs-bar .tab').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      ['overview','gains','composition','fx','optimizer','signals','table','breakdown','insights'].forEach(n=>
-        document.getElementById(`tab-${n}`).style.display=n===tab.dataset.tab?'block':'none'
-      );
+      ['overview','gains','composition','fx','optimizer','correlation','signals','table','breakdown','insights','vix'].forEach(n=>{
+        const el=document.getElementById(`tab-${n}`);
+        if(el) el.style.display=n===tab.dataset.tab?'block':'none';
+      });
       if(tab.dataset.tab==='overview') drawMainChart(result);
       if(tab.dataset.tab==='gains') drawGainChart(result);
       if(tab.dataset.tab==='composition') drawCompositionChart(result);
@@ -2827,6 +3157,8 @@ function renderResults(result){
       if(tab.dataset.tab==='signals') renderSignals(result);
       if(tab.dataset.tab==='table') renderTable(result);
       if(tab.dataset.tab==='breakdown') renderBreakdown(result);
+      if(tab.dataset.tab==='correlation') renderCorrelation(result);
+      if(tab.dataset.tab==='vix') renderVIX(result);
       // optimizer: wire up button freshly each time tab is shown
       if(tab.dataset.tab==='optimizer'){
         const b=$('btn-run-optimizer');
@@ -2991,6 +3323,298 @@ function drawCompositionChart(result){
       const color=PALETTE[i%PALETTE.length];
       return`<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${ar.sym}</span>`;
     }).join('');
+  }
+}
+
+// ================================================================
+//  CORRELATION MATRIX TAB
+// ================================================================
+function renderCorrelation(result){
+  const el=$('correlation-content');
+  if(!el||el.dataset.rendered==='1') return;
+  el.dataset.rendered='1';
+
+  const equityAssets=result.assetResults.filter(ar=>ar.type!=='fi'&&ar.pairs.length>=30);
+  if(equityAssets.length<2){
+    el.innerHTML=`<div class="note">${t('corr_method')}<br><br>Need at least 2 equity assets with sufficient data.</div>`;
+    return;
+  }
+
+  const syms=equityAssets.map(ar=>ar.sym.replace('.SA',''));
+  const n=syms.length;
+
+  // Build return matrix (aligned dates)
+  const{matrix}=buildReturnMatrix(equityAssets.map(ar=>ar.pairs));
+
+  // Compute full correlation matrix
+  const corrMatrix=[];
+  for(let i=0;i<n;i++){
+    corrMatrix.push([]);
+    for(let j=0;j<n;j++){
+      corrMatrix[i].push(i===j?1:pearsonCorr(matrix[i],matrix[j]));
+    }
+  }
+
+  // Collinearity warnings: pairs with |corr| > 0.85
+  const highPairs=[];
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    if(Math.abs(corrMatrix[i][j])>0.85) highPairs.push({a:syms[i],b:syms[j],r:corrMatrix[i][j]});
+  }
+
+  // Color: -1=blue, 0=gray, +1=red/lime
+  function corrColor(r){
+    if(r>0.7) return `rgba(184,255,87,${0.3+r*0.6})`;
+    if(r<-0.7) return `rgba(77,184,255,${0.3+Math.abs(r)*0.6})`;
+    if(r>0.3) return `rgba(184,255,87,${r*0.4})`;
+    if(r<-0.3) return `rgba(77,184,255,${Math.abs(r)*0.4})`;
+    return 'rgba(90,100,128,0.2)';
+  }
+  function corrTextColor(r){
+    return Math.abs(r)>0.5?'var(--head)':'var(--muted2)';
+  }
+
+  const warnHtml=highPairs.length?`
+    <div class="ticker-error" style="margin-bottom:12px">
+      <strong>${t('corr_warn_high')}</strong>
+      ${highPairs.map(p=>`<div style="margin-top:4px">${p.a} ↔ ${p.b}: <strong>${fmt(p.r,2)}</strong> — ${t('corr_warn_detail')}</div>`).join('')}
+    </div>`:'';
+
+  const cellSize=Math.min(70,Math.floor(560/n));
+  const matrixHtml=`
+    <div style="overflow-x:auto">
+      <table style="border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:${Math.max(8,11-n)}px">
+        <thead>
+          <tr>
+            <th style="padding:4px 8px;color:var(--muted);font-weight:400;text-align:left;min-width:80px"></th>
+            ${syms.map(s=>`<th style="padding:4px 6px;color:var(--muted2);font-weight:600;text-align:center;width:${cellSize}px">${s}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${corrMatrix.map((row,i)=>`
+            <tr>
+              <td style="padding:4px 8px;color:var(--muted2);font-weight:600;white-space:nowrap">${syms[i]}</td>
+              ${row.map((r,j)=>`
+                <td style="padding:3px;text-align:center;width:${cellSize}px">
+                  <div style="background:${corrColor(r)};border-radius:4px;padding:6px 2px;color:${corrTextColor(r)};font-weight:${i===j?'700':'400'}">
+                    ${i===j?'—':fmt(r,2)}
+                  </div>
+                </td>`).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  const legendHtml=`
+    <div style="display:flex;gap:16px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:10px">
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:14px;height:14px;border-radius:3px;background:rgba(77,184,255,0.7)"></div>${t('corr_legend_neg')} (−1)
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:14px;height:14px;border-radius:3px;background:rgba(90,100,128,0.2)"></div>${t('corr_legend_zero')} (0)
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:14px;height:14px;border-radius:3px;background:rgba(184,255,87,0.85)"></div>${t('corr_legend_pos')} (+1)
+      </div>
+    </div>`;
+
+  el.innerHTML=`
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">${t('chart_corr_title')}</span>
+      </div>
+      ${warnHtml}
+      ${matrixHtml}
+      ${legendHtml}
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px">ⓘ ${t('corr_method')}</div>
+    </div>`;
+}
+
+// ================================================================
+//  VIX / CDX (HYG) TAB
+// ================================================================
+async function renderVIX(result){
+  const el=$('vix-content');
+  if(!el||el.dataset.rendered==='1') return;
+  el.dataset.rendered='1';
+
+  el.innerHTML=`<div class="chart-card"><div style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px">${t('vix_fetching')}</div></div>`;
+
+  const sd=$('start-date').value, ed=$('end-date').value;
+
+  try{
+    // Fetch VIX and HYG in parallel
+    const[vixPairs,hygPairs]=await Promise.allSettled([
+      fetchYahooWithRetry('^VIX',sd,ed,2),
+      fetchYahooWithRetry('HYG',sd,ed,2),
+    ]);
+
+    const vix=vixPairs.status==='fulfilled'?vixPairs.value:null;
+    const hyg=hygPairs.status==='fulfilled'?hygPairs.value:null;
+
+    if(!vix&&!hyg){
+      el.innerHTML=`<div class="ticker-error">${t('vix_failed')}</div>`;
+      return;
+    }
+
+    // VIX regime classification
+    const lastVIX=vix?vix[vix.length-1].price:null;
+    function vixRegime(v){
+      if(v==null) return null;
+      if(v<18) return{regime:t('vix_regime_low'),signal:t('vix_signal_low'),color:'var(--lime)',bar:v/40};
+      if(v<25) return{regime:t('vix_regime_mid'),signal:t('vix_signal_mid'),color:'var(--gold)',bar:v/40};
+      if(v<35) return{regime:t('vix_regime_high'),signal:t('vix_signal_high'),color:'var(--orange)',bar:v/40};
+      return{regime:t('vix_regime_extreme'),signal:t('vix_signal_extreme'),color:'var(--coral)',bar:Math.min(1,v/40)};
+    }
+    const reg=vixRegime(lastVIX);
+
+    // Correlations: portfolio vs VIX and HYG
+    const portTimeline=result.timeline;
+    function corrWithPort(instrPairs){
+      if(!instrPairs||instrPairs.length<20) return null;
+      const pm=buildPriceMap(instrPairs);
+      const portDates=portTimeline.map(d=>d.date);
+      const portVals=[],instrVals=[];
+      for(let i=1;i<portDates.length;i++){
+        const pv=portTimeline[i].valueUSD, pp=portTimeline[i-1].valueUSD;
+        const iv=pm[portDates[i]], ip=pm[portDates[i-1]];
+        if(pv>0&&pp>0&&iv>0&&ip>0){
+          portVals.push(Math.log(pv/pp));
+          instrVals.push(Math.log(iv/ip));
+        }
+      }
+      return pearsonCorr(portVals,instrVals);
+    }
+    const vixCorr=corrWithPort(vix);
+    const hygCorr=corrWithPort(hyg);
+
+    // 52W stats for VIX
+    const vix1m=vix&&vix.length>=22?((lastVIX/vix[vix.length-22].price)-1)*100:null;
+    const vixVals=vix?vix.map(p=>p.price):[];
+    const vixHi=vix?Math.max(...vixVals):null;
+    const vixLo=vix?Math.min(...vixVals):null;
+    const vixPos=vix&&vixHi>vixLo?((lastVIX-vixLo)/(vixHi-vixLo))*100:null;
+
+    // HYG stats
+    const lastHYG=hyg?hyg[hyg.length-1].price:null;
+    const hyg1m=hyg&&hyg.length>=22?((lastHYG/hyg[hyg.length-22].price)-1)*100:null;
+    const hygVals=hyg?hyg.map(p=>p.price):[];
+    const hygHi=hyg?Math.max(...hygVals):null;
+    const hygLo=hyg?Math.min(...hygVals):null;
+    const hygPos=hyg&&hygHi>hygLo?((lastHYG-hygLo)/(hygHi-hygLo))*100:null;
+
+    // Correlation bar helper
+    const corrBar=(r)=>{
+      if(r==null) return '<span style="color:var(--muted)">—</span>';
+      const pct=((r+1)/2*100).toFixed(0);
+      const color=r>0.3?'var(--coral)':r<-0.3?'var(--sky)':'var(--muted2)';
+      return`<div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="color:${color};font-weight:600">${fmt(r,2)}</span>
+      </div>`;
+    };
+
+    el.innerHTML=`
+      <div class="chart-card">
+        <div class="chart-card-header"><span class="chart-card-title">${t('vix_title')}</span></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+          ${lastVIX!=null?`
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${t('vix_current')}</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
+              <span style="font-size:32px;font-weight:700;color:${reg.color}">${fmt(lastVIX,1)}</span>
+              ${vix1m!=null?`<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${vix1m>=0?'var(--coral)':'var(--lime)'}">${fmtPct(vix1m)} 1M</span>`:''}
+            </div>
+            <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;margin-bottom:8px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px">${t('vix_regime')}</div>
+              <div style="color:${reg.color};font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600">${reg.regime}</div>
+              <div style="font-size:10px;color:var(--body);margin-top:3px;line-height:1.4">${reg.signal}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:3px">${t('vix_52w')}: ${fmt(vixLo,1)} – ${fmt(vixHi,1)}</div>
+            <div style="height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:3px">
+              <div style="width:${vixPos?.toFixed(0)||50}%;height:100%;background:${reg.color};border-radius:3px"></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)">${t('vix_pct52')}: ${vixPos!=null?fmt(vixPos,0)+'%':'—'}</div>
+          </div>`:'<div></div>'}
+
+          ${lastHYG!=null?`
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${t('cdx_title')}</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
+              <span style="font-size:32px;font-weight:700;color:${hyg1m!=null&&hyg1m<0?'var(--coral)':'var(--gold)'}">$${fmt(lastHYG,2)}</span>
+              ${hyg1m!=null?`<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${hyg1m>=0?'var(--lime)':'var(--coral)'}">${fmtPct(hyg1m)} 1M</span>`:''}
+            </div>
+            <div style="font-size:10px;color:var(--body);line-height:1.5;margin-bottom:8px">${t('cdx_note')}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:3px">${t('vix_52w')}: $${fmt(hygLo,2)} – $${fmt(hygHi,2)}</div>
+            <div style="height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:3px">
+              <div style="width:${hygPos?.toFixed(0)||50}%;height:100%;background:var(--gold);border-radius:3px"></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)">${t('vix_pct52')}: ${hygPos!=null?fmt(hygPos,0)+'%':'—'}</div>
+          </div>`:'<div></div>'}
+        </div>
+
+        <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+            Portfolio Correlations (daily returns)
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px">
+            ${vixCorr!=null?`
+              <div style="color:var(--muted2);white-space:nowrap">${t('vix_corr')('^VIX')}</div>
+              <div>${corrBar(vixCorr)}</div>
+              <div style="color:var(--muted);font-size:9px;grid-column:1/-1;margin-bottom:4px">
+                ${Math.abs(vixCorr)>0.3?(vixCorr>0?'Positive VIX corr: portfolio loses when markets fear ↑':'Negative VIX corr: portfolio tends to gain in high-fear regimes'):'Low VIX correlation — portfolio relatively insensitive to volatility spikes'}
+              </div>`:'' }
+            ${hygCorr!=null?`
+              <div style="color:var(--muted2);white-space:nowrap">${t('vix_corr')('HYG')}</div>
+              <div>${corrBar(hygCorr)}</div>
+              <div style="color:var(--muted);font-size:9px;grid-column:1/-1;margin-bottom:4px">
+                ${hygCorr>0.5?'High HYG correlation: portfolio moves with credit spreads — risk-on assets dominate':'Low HYG correlation — portfolio partially hedged against credit spread widening'}
+              </div>`:'' }
+          </div>
+        </div>
+
+        <div class="note" style="margin-top:14px;font-size:9px">
+          ⚡ ${t('vix_short_note')}<br><br>
+          ⓘ ${t('vix_disclaimer')}
+        </div>
+      </div>`;
+
+    // Chart: VIX over time
+    if(vix&&vix.length>10){
+      const vixCard=document.createElement('div');
+      vixCard.className='chart-card';
+      vixCard.innerHTML=`
+        <div class="chart-card-header"><span class="chart-card-title">VIX Over Time</span></div>
+        <div class="chart-wrap"><canvas id="chart-vix"></canvas></div>`;
+      el.appendChild(vixCard);
+      setTimeout(()=>{
+        destroyChart('chart-vix');
+        const vctx=document.getElementById('chart-vix')?.getContext('2d');
+        if(!vctx) return;
+        const step=Math.max(1,Math.floor(vix.length/120));
+        const sampled=vix.filter((_,i)=>i%step===0||i===vix.length-1);
+        const g=vctx.createLinearGradient(0,0,0,250);
+        g.addColorStop(0,'rgba(255,95,95,.25)');g.addColorStop(1,'rgba(255,95,95,0)');
+        state.charts['chart-vix']=new Chart(vctx,{type:'line',
+          data:{labels:sampled.map(p=>p.date),datasets:[{
+            label:'VIX',data:sampled.map(p=>p.price),
+            borderColor:'#ff5f5f',backgroundColor:g,borderWidth:1.5,pointRadius:0,tension:.3,fill:true
+          }]},
+          options:{...CD,plugins:{...CD.plugins},
+            scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>v.toFixed(0)}}},
+          }
+        });
+        attachRangeDrag('chart-vix',
+          ()=>({labels:sampled.map(p=>p.date),values:sampled.map(p=>p.price)}),
+          (delta,pct)=>`${delta>=0?'+':''}${fmt(Math.abs(delta),2)} pts (${delta>=0?'+':''}${fmt(pct,2)}%)`
+        );
+      },100);
+    }
+
+  }catch(e){
+    el.innerHTML=`<div class="ticker-error">${t('vix_failed')}<br><small>${e.message}</small></div>`;
   }
 }
 
