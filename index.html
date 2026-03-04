@@ -1265,6 +1265,49 @@ let state = {
 };
 
 // ================================================================
+//  PERSISTENCE  (localStorage key: "dca_state")
+// ================================================================
+const PERSIST_KEY = 'dca_state';
+
+function saveState(){
+  try{
+    const snap={
+      tickers: state.tickers,
+      period:  state.period,
+      viewCur: state.viewCur,
+      compMode: state.compMode,
+      startDate: $('start-date')?.value || '',
+      endDate:   $('end-date')?.value   || '',
+      amtUSD:    $('amt-usd')?.value    || '500',
+      amtBRL:    $('amt-brl')?.value    || '0',
+    };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(snap));
+  }catch(e){}
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(PERSIST_KEY);
+    if(!raw) return;
+    const snap=JSON.parse(raw);
+    // Tickers — validate basic shape
+    if(Array.isArray(snap.tickers)&&snap.tickers.length){
+      // Guard: each ticker must have sym and wt
+      const valid=snap.tickers.every(tk=>tk.sym&&typeof tk.wt==='number');
+      if(valid) state.tickers=snap.tickers;
+    }
+    if(snap.period) state.period=snap.period;
+    if(snap.viewCur==='USD'||snap.viewCur==='BRL') state.viewCur=snap.viewCur;
+    if(snap.compMode) state.compMode=snap.compMode;
+    // Input fields — set after DOM is ready (called from INIT)
+    if(snap.startDate) { const el=$('start-date'); if(el) el.value=snap.startDate; }
+    if(snap.endDate)   { const el=$('end-date');   if(el) el.value=snap.endDate;   }
+    if(snap.amtUSD!=null){ const el=$('amt-usd'); if(el) el.value=snap.amtUSD; }
+    if(snap.amtBRL!=null){ const el=$('amt-brl'); if(el) el.value=snap.amtBRL; }
+  }catch(e){ /* corrupt data — ignore, keep defaults */ }
+}
+
+// ================================================================
 //  FETCH CACHE
 // ================================================================
 const priceCache = {}; // key: `${sym}_${startDate}_${endDate}` => pairs[]
@@ -2980,6 +3023,7 @@ function renderHoldings(){
     wtEl.textContent=t('wt_label')(totalWt,wtStatus);
     wtEl.className='wt-total '+(totalWt===100?'wt-ok':totalWt>100?'wt-over':'wt-warn');
   }
+  saveState();
 }
 
 // ================================================================
@@ -3003,6 +3047,7 @@ function renderSidebar(){
       btn.classList.add('active');
       const d=PERIODS.find(p=>p.label===state.period).days;
       $('period-desc').textContent=t('period_desc')(d);
+      saveState();
     });
   });
   // Type toggle
@@ -3022,7 +3067,7 @@ function renderSidebar(){
       $('fi-name').value=n;$('fi-rate').value=r;$('fi-cur').value=c;
     });
   });
-  $('end-date').value=new Date().toISOString().slice(0,10);
+  if(!$('end-date').value) $('end-date').value=new Date().toISOString().slice(0,10);
 }
 
 // ================================================================
@@ -3898,6 +3943,7 @@ function setCurrency(cur){
   if(at==='overview') drawMainChart(state.result);
   if(at==='gains') drawGainChart(state.result);
   if(at==='composition') drawCompositionChart(state.result);
+  saveState();
 }
 
 // ================================================================
@@ -4185,13 +4231,22 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
 // ================================================================
 //  INIT
 // ================================================================
+// Restore persisted state BEFORE rendering anything
+loadState();
+
 // Set the correct active lang button on load (includes mobile top bar)
 document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
 // Set the correct active currency button on load (includes mobile top bar)
 document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.dataset.cur===state.viewCur));
 applyTranslations();
 renderSidebar();
-renderHoldings();
+renderHoldings(); // also calls saveState() — harmless on first load
+
+// Wire change events on inputs so they save on every edit
+['start-date','end-date','amt-usd','amt-brl'].forEach(id=>{
+  const el=$(id);
+  if(el) el.addEventListener('change',saveState);
+});
 // About DCA — collapsed by default, render content lazily on first expand
 function _wireAboutToggle(toggleId, bodyId, chevId){
   const tog=document.getElementById(toggleId);
