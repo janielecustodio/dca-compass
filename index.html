@@ -2007,6 +2007,28 @@ function runStrategyOptimizerSync({tickerData,fxPairs,annualBudgetUSD,startDate,
     }
   }
 
+  // ---- Compute full risk metrics (Sharpe, CVaR, MaxDD, Vol) for globalBest and cvarBest ----
+  // We run runDCA once for each to get a full timeline for risk analytics.
+  function enrichWithMetrics(best){
+    if(!best) return best;
+    try{
+      const freq=STRAT_FREQS.find(f=>f.label===best.label||f.label===best.freq);
+      if(!freq) return best;
+      const investDates=buildTuesdayDates(startDate,endDate,freq.days);
+      if(!investDates.length) return best;
+      const amtPerPeriod=annualBudgetUSD/(365/freq.days);
+      const full=runDCA({tickerData,fxPairs,investDates,amtUSD:amtPerPeriod,amtBRL:0,weights:best.weights});
+      return{...best,
+        sharpeUSD:full.sharpeUSD, sharpeBRL:full.sharpeBRL,
+        cvarUSD:full.cvarUSD,     cvarBRL:full.cvarBRL,
+        maxDDUSD:full.maxDDUSD,   maxDDBRL:full.maxDDBRL,
+        volUSD:full.volUSD,       volBRL:full.volBRL,
+      };
+    }catch(e){ return best; }
+  }
+  globalBest=enrichWithMetrics(globalBest);
+  cvarBest=enrichWithMetrics(cvarBest);
+
   return{results,globalBest,syms,combos,stepPct,annualBudgetUSD,startDate,endDate,top5,cvarBest};
 }
 
@@ -2070,6 +2092,38 @@ function renderStrategyResults(optResult, sd, ed){
   const COLORS=['#b8ff57','#4db8ff','#a78bfa','#f5c842','#ff9f43','#ff5f5f'];
   const years=(new Date(ed)-new Date(sd))/(365.25*86400000);
 
+  // ---- Helper: render 4-card risk metrics strip for any enriched result object ----
+  function metricsStrip(r, accentColor='var(--lime)'){
+    const sharpe=isUSD?r.sharpeUSD:r.sharpeBRL;
+    const cvar=isUSD?r.cvarUSD:r.cvarBRL;
+    const maxdd=isUSD?r.maxDDUSD:r.maxDDBRL;
+    const vol=isUSD?r.volUSD:r.volBRL;
+    if(sharpe==null&&cvar==null&&maxdd==null&&vol==null) return '';
+    const sColor=sharpe!=null&&sharpe>=1?'var(--lime)':sharpe!=null&&sharpe>=0?'var(--gold)':'var(--coral)';
+    return`<div class="stats-grid" style="margin:8px 0 14px">
+      ${sharpe!=null?`<div class="stat-card c-sky" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_sharpe')}</div>
+        <div class="stat-value" style="color:${sColor};font-size:22px">${fmt(sharpe,2)}</div>
+        <div class="stat-sub">Ann. risk-adj return (&gt;1 = good)</div>
+      </div>`:''}
+      ${cvar!=null?`<div class="stat-card c-coral" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_cvar')} <span style="font-size:8px;opacity:.7">${t('stat_cvar_note')}</span></div>
+        <div class="stat-value neg" style="font-size:22px">−${fmt(cvar,2)}%</div>
+        <div class="stat-sub">95% confidence, monthly</div>
+      </div>`:''}
+      ${maxdd!=null?`<div class="stat-card c-coral" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_max_dd')}</div>
+        <div class="stat-value neg" style="font-size:22px">−${fmt(maxdd,1)}%</div>
+        <div class="stat-sub">Peak-to-trough portfolio decline</div>
+      </div>`:''}
+      ${vol!=null?`<div class="stat-card c-sky" style="padding:10px 14px">
+        <div class="stat-label">${t('stat_volatility')}</div>
+        <div class="stat-value" style="color:var(--sky);font-size:22px">${fmt(vol,1)}%</div>
+        <div class="stat-sub">Annualised daily vol</div>
+      </div>`:''}
+    </div>`;
+  }
+
   // ---- Winner banner ----
   const gb=globalBest;
   const gbRet=isUSD?gb.retUSD:gb.retBRL;
@@ -2123,6 +2177,7 @@ function renderStrategyResults(optResult, sd, ed){
           <div class="weight-bar-pct" style="color:${COLORS[i%COLORS.length]}">${gb.combo[i]}%</div>
         </div>`).join('')}
     </div>
+    ${metricsStrip(gb)}
   `;
 
   // ---- Min-CVaR portfolio comparison ----
@@ -2166,6 +2221,7 @@ function renderStrategyResults(optResult, sd, ed){
             <div class="weight-bar-pct" style="color:var(--sky)">${cb.combo[i]}%</div>
           </div>`).join('')}
       </div>
+      ${metricsStrip(cb,'var(--sky)')}
     </div>`;
   }
 
