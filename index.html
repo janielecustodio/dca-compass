@@ -421,9 +421,9 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
   <div class="mobile-about" id="mobile-about-panel">
     <div class="about-toggle mobile-about-toggle" id="about-toggle-mobile">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lime)" data-i18n="about_label">About this tool</span>
-      <span class="about-chevron open" id="about-chevron-mobile">▼</span>
+      <span class="about-chevron" id="about-chevron-mobile">▼</span>
     </div>
-    <div class="about-body open" id="about-body-mobile"><div id="about-content-mobile"></div></div>
+    <div class="about-body" id="about-body-mobile"><div id="about-content-mobile"></div></div>
   </div>
 
   <!-- SIDEBAR -->
@@ -442,9 +442,9 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
     <div class="about-top-wrap" id="about-top-wrap">
       <div class="about-toggle" id="about-toggle">
         <span class="section-label" style="margin:0" data-i18n="about_label">About this tool</span>
-        <span class="about-chevron open" id="about-chevron">▼</span>
+        <span class="about-chevron" id="about-chevron">▼</span>
       </div>
-      <div class="about-body open" id="about-body"><div id="about-content"></div></div>
+      <div class="about-body" id="about-body"><div id="about-content"></div></div>
     </div>
 
     <div class="sidebar-body">
@@ -4109,8 +4109,7 @@ document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.d
 applyTranslations();
 renderSidebar();
 renderHoldings();
-// About DCA — render immediately (open by default) and wire both desktop + mobile toggles
-renderAboutDCA();
+// About DCA — collapsed by default, render content lazily on first expand
 function _wireAboutToggle(toggleId, bodyId, chevId){
   const tog=document.getElementById(toggleId);
   const bod=document.getElementById(bodyId);
@@ -4119,6 +4118,7 @@ function _wireAboutToggle(toggleId, bodyId, chevId){
     tog.addEventListener('click',()=>{
       const o=bod.classList.toggle('open');
       chev.classList.toggle('open',o);
+      if(o) renderAboutDCA();
     });
   }
 }
