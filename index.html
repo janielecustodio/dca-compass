@@ -343,17 +343,30 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
 .lang-btn.active{background:var(--violet);color:#fff}
 
 /* ABOUT DCA */
+.about-top-wrap{padding:0 18px 4px;border-bottom:1px solid var(--line)}
 .about-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:10px 0 6px}
 .about-toggle:hover .about-chevron{color:var(--lime)}
 .about-chevron{font-size:10px;color:var(--muted);transition:transform .2s,color .2s}
 .about-chevron.open{transform:rotate(180deg)}
-.about-body{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-height:0;transition:max-height .35s ease,padding .2s}
-.about-body.open{max-height:700px;padding:13px}
+.about-body{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-height:0;transition:max-height .5s ease,padding .25s}
+.about-body.open{max-height:1200px;padding:13px}
 .about-sec{margin-bottom:11px}
 .about-sec:last-child{margin-bottom:0}
-.about-sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--lime);margin-bottom:5px}
+.about-sec-title{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--lime);margin-bottom:6px}
 .about-text{font-size:11px;color:var(--muted2);line-height:1.7}
 .about-text strong{color:var(--head)}
+/* Feature list inside about */
+.about-features{display:flex;flex-direction:column;gap:7px}
+.about-feat{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted2);line-height:1.6}
+.about-feat-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.about-feat strong{color:var(--head)}
+/* Mobile about panel */
+.mobile-about{display:none;padding:10px 14px 6px;background:var(--ink2);border-bottom:2px solid var(--lime)}
+.mobile-about-toggle{padding:4px 0 6px}
+@media(max-width:900px){
+  .mobile-about{display:block}
+  .about-top-wrap{display:none} /* hide sidebar about on mobile — mobile-about-panel takes over */
+}
 
 /* MARKET INSIGHTS */
 .insights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:16px}
@@ -404,6 +417,15 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
     </div>
   </div>
 
+  <!-- MOBILE ABOUT PANEL (visible only <900px, shown above the fold) -->
+  <div class="mobile-about" id="mobile-about-panel">
+    <div class="about-toggle mobile-about-toggle" id="about-toggle-mobile">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lime)" data-i18n="about_label">About this tool</span>
+      <span class="about-chevron open" id="about-chevron-mobile">▼</span>
+    </div>
+    <div class="about-body open" id="about-body-mobile"><div id="about-content-mobile"></div></div>
+  </div>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -414,6 +436,15 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
         </div>
       </div>
       <div class="brand-sub" data-i18n="brand_sub">USA · Brazil · Cross-Currency Simulator</div>
+    </div>
+
+    <!-- ABOUT DCA — shown at top so users immediately understand the tool -->
+    <div class="about-top-wrap" id="about-top-wrap">
+      <div class="about-toggle" id="about-toggle">
+        <span class="section-label" style="margin:0" data-i18n="about_label">About this tool</span>
+        <span class="about-chevron open" id="about-chevron">▼</span>
+      </div>
+      <div class="about-body open" id="about-body"><div id="about-content"></div></div>
     </div>
 
     <div class="sidebar-body">
@@ -496,15 +527,6 @@ footer{padding:12px 20px;border-top:1px solid var(--line);font-family:'IBM Plex 
       </div>
       <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:2px" data-i18n="amt_note">Both currencies accepted. BRL uses historical FX rate at time of each purchase.</div>
 
-    </div>
-
-    <!-- ABOUT DCA -->
-    <div style="padding:0 18px 16px;border-top:1px solid var(--line)">
-      <div class="about-toggle" id="about-toggle">
-        <span class="section-label" style="margin:0" data-i18n="about_label">About DCA</span>
-        <span class="about-chevron" id="about-chevron">▼</span>
-      </div>
-      <div class="about-body" id="about-body"><div id="about-content"></div></div>
     </div>
 
     <div class="sidebar-footer">
@@ -722,15 +744,24 @@ const TRANSLATIONS = {
     loading_calc: "CALCULATING",
     progress_fx: "💱 USD/BRL exchange rate",
     progress_calc: "⚙ Running DCA engine",
-    about_label: "About DCA",
-    about_what_title: "What is Dollar Cost Averaging?",
-    about_what_text: "DCA means investing a <strong>fixed amount at regular intervals</strong> — weekly, monthly or quarterly — regardless of price. You automatically buy more units when prices are low and fewer when prices are high, smoothing your average cost over time.",
-    about_why_title: "Why DCA for Long-Term Investing?",
-    about_why_text: "<strong>No timing needed</strong> — removes the pressure to predict market peaks or bottoms.<br><strong>Reduces emotional bias</strong> — disciplined, automatic investing.<br><strong>Compound growth</strong> — returns reinvested over decades grow exponentially.<br><strong>Buy & hold focus</strong> — this tool is built around accumulation only, not selling.",
-    about_how_title: "How to Use This Tool",
-    about_how_text: "① Add assets (ETFs, stocks, or fixed income) and set portfolio weights.<br>② Choose your investment frequency and amounts in USD and/or BRL.<br>③ Run the simulation to see historical returns, FX impact, and per-asset breakdown.<br>④ Use the <strong>Optimizer</strong> to find the best historical frequency/allocation.<br>⑤ Use <strong>Market Insights</strong> to check technical readings before each rebalancing.",
-    about_rebalance_title: "Rebalancing Approach",
-    about_rebalance_text: "This tool does not model selling. Instead, use the <strong>Market Insights</strong> tab every 6 months to see which assets are trading at historical discounts — then allocate more of your periodic investment toward them.",
+    about_label: "About this tool",
+    about_what_title: "What is DCA Compass?",
+    about_what_text: "A free, open-source <strong>Dollar Cost Averaging simulator</strong> for investors in the US and Brazil. Build a multi-asset portfolio, run a historical backtest, and get risk analytics — all in your browser, no account needed.",
+    about_features_title: "What this tool does",
+    about_features_text: `<div class="about-features">
+<div class="about-feat"><span class="about-feat-icon">📊</span><div><strong>Historical Backtest</strong> — simulate DCA into any mix of ETFs, stocks, Brazilian equities (.SA), FIIs/REITs and fixed income (CDB, I-Bond, T-Bill) over any date range.</div></div>
+<div class="about-feat"><span class="about-feat-icon">💱</span><div><strong>Cross-Currency (USD ↔ BRL)</strong> — see returns in both currencies with real historical FX rates, and understand how exchange-rate movements affected your portfolio.</div></div>
+<div class="about-feat"><span class="about-feat-icon">⚡</span><div><strong>Frequency Optimizer</strong> — automatically tests weekly, bi-weekly, monthly and quarterly DCA to find the historically best cadence and allocation weights, with zero-weight support to exclude underperforming assets.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🛡</span><div><strong>Risk Analytics</strong> — Sharpe ratio, 95% CVaR (expected tail loss), max drawdown and annualised volatility for every backtest. The optimizer also shows a Min-CVaR portfolio alongside the max-return one.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🔗</span><div><strong>Correlation Matrix</strong> — Pearson heatmap across all assets with collinearity warnings, so you can spot redundant holdings before committing capital.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🌡</span><div><strong>VIX / CDX Signals</strong> — live CBOE VIX regime (Low / Elevated / Fear / Extreme Fear), HYG credit proxy, and portfolio correlation to both — helping you time DCA top-ups during high-fear windows.</div></div>
+<div class="about-feat"><span class="about-feat-icon">📈</span><div><strong>Market Insights</strong> — 52-week range position, SMA 20/50 distance and RSI for every asset, so you can see which are trading at a discount before each rebalancing date.</div></div>
+<div class="about-feat"><span class="about-feat-icon">📉</span><div><strong>Expense Ratios & Historical FI Rates</strong> — ETF/fund costs are deducted from returns automatically, and Brazilian CDI/SELIC rates vary year by year in the backtest.</div></div>
+</div>`,
+    about_how_title: "How to run your first simulation",
+    about_how_text: "① Pick a <strong>Quick Preset</strong> or add your own assets and weights.<br>② Set a <strong>date range</strong> and how much you invest per period (USD and/or BRL).<br>③ Click <strong>Run Simulation</strong> — results appear with headline stats, charts and tabs.<br>④ Explore the <strong>Optimizer</strong> tab for the best cadence, <strong>Correlation</strong> for overlap, and <strong>VIX / CDX</strong> for current market regime.",
+    about_rebalance_title: "Rebalancing approach",
+    about_rebalance_text: "This tool models accumulation only, not selling. Use the <strong>Market Insights</strong> tab every few months to see which assets are at historical discounts, then direct more of your next DCA contribution toward them.",
     tab_insights: "Market Insights",
     ins_loading: "Fetching market data…",
     ins_zone_oversold: "Oversold",
@@ -998,15 +1029,24 @@ const TRANSLATIONS = {
     loading_calc: "CALCULANDO",
     progress_fx: "💱 Taxa USD/BRL",
     progress_calc: "⚙ Executando motor DCA",
-    about_label: "Sobre o DCA",
-    about_what_title: "O que é Dollar Cost Averaging?",
-    about_what_text: "DCA significa investir um <strong>valor fixo em intervalos regulares</strong> — semanal, mensal ou trimestral — independente do preço. Você compra automaticamente mais cotas quando os preços estão baixos e menos quando estão altos, suavizando seu preço médio ao longo do tempo.",
-    about_why_title: "Por que usar DCA no Investimento de Longo Prazo?",
-    about_why_text: "<strong>Sem necessidade de timing</strong> — elimina a pressão de prever topos ou fundos do mercado.<br><strong>Reduz viés emocional</strong> — investimento disciplinado e automático.<br><strong>Crescimento composto</strong> — retornos reinvestidos por décadas crescem exponencialmente.<br><strong>Foco em acumulação</strong> — esta ferramenta é construída apenas para acumulação, sem vendas.",
-    about_how_title: "Como Usar Esta Ferramenta",
-    about_how_text: "① Adicione ativos (ETFs, ações ou renda fixa) e defina os pesos do portfólio.<br>② Escolha a frequência e os valores de aporte em USD e/ou BRL.<br>③ Execute a simulação para ver retornos históricos, impacto cambial e detalhamento por ativo.<br>④ Use o <strong>Otimizador</strong> para encontrar a melhor frequência/alocação histórica.<br>⑤ Use <strong>Insights de Mercado</strong> para verificar leituras técnicas antes de cada rebalanceamento.",
-    about_rebalance_title: "Abordagem de Rebalanceamento",
-    about_rebalance_text: "Esta ferramenta não modela vendas. Em vez disso, use a aba <strong>Insights de Mercado</strong> a cada 6 meses para ver quais ativos estão sendo negociados com desconto histórico — então aloque mais do seu aporte periódico neles.",
+    about_label: "Sobre esta ferramenta",
+    about_what_title: "O que é o DCA Compass?",
+    about_what_text: "Um <strong>simulador de Dollar Cost Averaging</strong> gratuito e de código aberto para investidores no Brasil e nos EUA. Monte um portfólio multi-ativo, rode um backtest histórico e obtenha análises de risco — tudo no navegador, sem precisar criar conta.",
+    about_features_title: "O que esta ferramenta faz",
+    about_features_text: `<div class="about-features">
+<div class="about-feat"><span class="about-feat-icon">📊</span><div><strong>Backtest Histórico</strong> — simule DCA em qualquer combinação de ETFs, ações, ativos brasileiros (.SA), FIIs/REITs e renda fixa (CDB, I-Bond, T-Bill) em qualquer período.</div></div>
+<div class="about-feat"><span class="about-feat-icon">💱</span><div><strong>Multi-Moeda (USD ↔ BRL)</strong> — veja retornos nas duas moedas com câmbio histórico real e entenda como a variação cambial afetou seu portfólio.</div></div>
+<div class="about-feat"><span class="about-feat-icon">⚡</span><div><strong>Otimizador de Frequência</strong> — testa automaticamente aportes semanais, quinzenais, mensais e trimestrais para encontrar a cadência e os pesos historicamente melhores, com suporte para excluir ativos com peso zero.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🛡</span><div><strong>Análise de Risco</strong> — Índice de Sharpe, CVaR 95% (perda esperada na cauda), drawdown máximo e volatilidade anualizada para cada backtest. O otimizador também exibe um portfólio Min-CVaR ao lado do de máximo retorno.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🔗</span><div><strong>Matriz de Correlação</strong> — mapa de calor de Pearson entre todos os ativos com alertas de colinearidade, para identificar sobreposições antes de alocar capital.</div></div>
+<div class="about-feat"><span class="about-feat-icon">🌡</span><div><strong>Sinais VIX / CDX</strong> — regime CBOE VIX em tempo real (Baixo / Elevado / Medo / Medo Extremo), proxy de crédito HYG e correlação do portfólio com ambos — ajudando a identificar janelas de acúmulo em momentos de alta aversão ao risco.</div></div>
+<div class="about-feat"><span class="about-feat-icon">📈</span><div><strong>Insights de Mercado</strong> — posição na faixa de 52 semanas, distância da SMA 20/50 e RSI para cada ativo, para ver quais estão com desconto histórico antes de cada rebalanceamento.</div></div>
+<div class="about-feat"><span class="about-feat-icon">📉</span><div><strong>Taxas e Histórico de Renda Fixa</strong> — taxas de fundos e ETFs são descontadas automaticamente dos retornos, e as taxas CDI/SELIC variam ano a ano no backtest.</div></div>
+</div>`,
+    about_how_title: "Como rodar sua primeira simulação",
+    about_how_text: "① Escolha um <strong>Preset Rápido</strong> ou adicione seus próprios ativos e pesos.<br>② Defina o <strong>período</strong> e o valor do aporte por período (USD e/ou BRL).<br>③ Clique em <strong>Rodar Simulação</strong> — os resultados aparecem com estatísticas, gráficos e abas.<br>④ Explore a aba <strong>Otimizador</strong> para a melhor cadência, <strong>Correlação</strong> para sobreposições e <strong>VIX / CDX</strong> para o regime de mercado atual.",
+    about_rebalance_title: "Abordagem de rebalanceamento",
+    about_rebalance_text: "Esta ferramenta modela apenas acumulação, sem vendas. Use a aba <strong>Insights de Mercado</strong> a cada alguns meses para ver quais ativos estão com desconto histórico e direcione mais do seu próximo aporte para eles.",
     tab_insights: "Insights de Mercado",
     ins_loading: "Buscando dados de mercado…",
     ins_zone_oversold: "Sobrevendido",
@@ -1149,7 +1189,7 @@ function setLang(lang) {
   applyTranslations();
   // Re-render dynamic parts that depend on language
   renderHoldings();
-  if(document.getElementById('about-body')?.classList.contains('open'))renderAboutDCA();
+  renderAboutDCA(); // always refresh — about is open by default
   const _ig=document.getElementById('insights-grid');
   if(_ig){delete _ig.dataset.rendered;}
   // Update period desc
@@ -1161,13 +1201,15 @@ function setLang(lang) {
 }
 
 function renderAboutDCA(){
-  const el=document.getElementById('about-content');
-  if(!el)return;
-  el.innerHTML=`
+  const html=`
     <div class="about-sec"><div class="about-sec-title">${t('about_what_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_what_text}</div></div>
-    <div class="about-sec"><div class="about-sec-title">${t('about_why_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_why_text}</div></div>
+    <div class="about-sec"><div class="about-sec-title">${t('about_features_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_features_text}</div></div>
     <div class="about-sec"><div class="about-sec-title">${t('about_how_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_how_text}</div></div>
     <div class="about-sec"><div class="about-sec-title">${t('about_rebalance_title')}</div><div class="about-text">${TRANSLATIONS[currentLang].about_rebalance_text}</div></div>`;
+  const el=document.getElementById('about-content');
+  if(el) el.innerHTML=html;
+  const elM=document.getElementById('about-content-mobile');
+  if(elM) elM.innerHTML=html;
 }
 
 // ================================================================
@@ -4067,17 +4109,22 @@ document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.d
 applyTranslations();
 renderSidebar();
 renderHoldings();
-const _aToggle=document.getElementById('about-toggle');
-const _aBody=document.getElementById('about-body');
-const _aChev=document.getElementById('about-chevron');
-if(!_aToggle) console.warn('about-toggle not found');
-if(_aToggle&&_aBody&&_aChev){
-  _aToggle.addEventListener('click',()=>{
-    const o=_aBody.classList.toggle('open');
-    _aChev.classList.toggle('open',o);
-    if(o) renderAboutDCA();
-  });
+// About DCA — render immediately (open by default) and wire both desktop + mobile toggles
+renderAboutDCA();
+function _wireAboutToggle(toggleId, bodyId, chevId){
+  const tog=document.getElementById(toggleId);
+  const bod=document.getElementById(bodyId);
+  const chev=document.getElementById(chevId);
+  if(tog&&bod&&chev){
+    tog.addEventListener('click',()=>{
+      const o=bod.classList.toggle('open');
+      chev.classList.toggle('open',o);
+    });
+  }
 }
+_wireAboutToggle('about-toggle','about-body','about-chevron');
+_wireAboutToggle('about-toggle-mobile','about-body-mobile','about-chevron-mobile');
+
 
 // Set initial period desc
 const _initPeriod=PERIODS.find(p=>p.label===state.period);
