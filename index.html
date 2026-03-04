@@ -4354,9 +4354,10 @@ function wirePresetBtns(){
       const pw=state.prewarmStart;
       const pe=state.prewarmEnd;
       if(pw&&pe&&fresh.dataset.prewarm==='1'){
-        // Only auto-fill dates if user hasn't customised them
+        // Always use prewarm dates so the cache keys match — otherwise a
+        // localStorage-restored date would cause a cache miss and a live fetch
         const startInp=$('start-date'),endInp=$('end-date');
-        if(startInp&&endInp&&(!startInp.value||startInp.dataset.auto==='1')){
+        if(startInp&&endInp){
           startInp.value=pw;startInp.dataset.auto='1';
           endInp.value=pe;endInp.dataset.auto='1';
         }
