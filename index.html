@@ -141,6 +141,11 @@ select option{background:var(--ink3)}
 .ticker-error{background:rgba(255,95,95,.07);border:1px solid rgba(255,95,95,.2);border-radius:var(--r);padding:7px 10px;font-size:10px;color:var(--coral);margin-top:5px;font-family:'IBM Plex Mono',monospace;line-height:1.5}
 .ticker-error strong{font-weight:600}
 .warn-box{background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:var(--r);padding:8px 10px;font-size:10px;color:var(--gold);margin-top:5px;line-height:1.5}
+.date-overlap-banner{background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.25);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--gold);margin-bottom:10px;line-height:1.6;font-family:'IBM Plex Mono',monospace}
+.date-overlap-banner ul{margin:5px 0 8px 16px;font-size:10px;opacity:.85}
+.date-overlap-banner .btn-snap-date{background:var(--gold);color:#111;border:none;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-top:4px}
+.date-overlap-banner .btn-snap-date:hover{opacity:.85}
+.date-overlap-banner .btn-dismiss-overlap{background:transparent;color:var(--muted2);border:none;font-size:10px;cursor:pointer;margin-left:8px;text-decoration:underline}
 
 /* NOTES */
 .note{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:var(--r);padding:9px 11px;font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:9px}
@@ -817,6 +822,11 @@ const TRANSLATIONS = {
     comp_pct: "100%",
     retry_ticker: sym => `↺ Retry ${sym}`,
     warn_some_failed_retry: "⚠ Some tickers failed — you can retry individually:",
+    warn_date_mismatch: (sym, date) => `⚠ <strong>${sym}</strong> only has data from <strong>${date}</strong>`,
+    warn_date_mismatch_title: "Not all assets cover the full date range",
+    warn_date_mismatch_snap: date => `Use common start date (${date})`,
+    warn_date_mismatch_note: "Results above include only dates where all assets have data — earlier periods are missing some assets.",
+    dismiss: "Dismiss",
     // Risk analytics
     stat_sharpe: "Sharpe Ratio",
     stat_cvar: "CVaR (95%)",
@@ -1102,6 +1112,11 @@ const TRANSLATIONS = {
     comp_pct: "100%",
     retry_ticker: sym => `↺ Tentar ${sym}`,
     warn_some_failed_retry: "⚠ Alguns ativos falharam — você pode tentar novamente individualmente:",
+    warn_date_mismatch: (sym, date) => `⚠ <strong>${sym}</strong> só tem dados a partir de <strong>${date}</strong>`,
+    warn_date_mismatch_title: "Nem todos os ativos cobrem o intervalo completo",
+    warn_date_mismatch_snap: date => `Usar data inicial comum (${date})`,
+    warn_date_mismatch_note: "Os resultados acima incluem apenas datas em que todos os ativos têm dados — períodos anteriores estão incompletos.",
+    dismiss: "Fechar",
     stat_sharpe: "Índice de Sharpe",
     stat_cvar: "CVaR (95%)",
     stat_cvar_note: "Perda esperada nos piores 5% dos meses",
@@ -4002,6 +4017,55 @@ function setCurrency(cur){
 }
 
 // ================================================================
+//  DATE OVERLAP BANNER
+//  Called after renderResults — compares each asset's actual first
+//  data point against the requested startDate. If any asset starts
+//  later, shows a banner offering to snap to the common start.
+// ================================================================
+function checkDateOverlap(tickerData, requestedStart, requestedEnd){
+  // Remove any existing banner from a previous run
+  document.getElementById('date-overlap-banner')?.remove();
+
+  // Only equity-type assets (FI are synthetic, always cover full range)
+  const lateStarters = tickerData
+    .filter(td => td.type !== 'fi' && td.pairs && td.pairs.length > 0)
+    .map(td => ({ sym: td.sym, firstDate: td.pairs[0].date }))
+    .filter(x => x.firstDate > requestedStart)
+    .sort((a, b) => b.firstDate.localeCompare(a.firstDate)); // latest first
+
+  if(!lateStarters.length) return; // all assets cover full range — nothing to do
+
+  // The common start = latest first-date among all late starters
+  const commonStart = lateStarters[0].firstDate;
+
+  const banner = document.createElement('div');
+  banner.className = 'date-overlap-banner';
+  banner.id = 'date-overlap-banner';
+  banner.innerHTML = `
+    <strong>${t('warn_date_mismatch_title')}</strong>
+    <ul>${lateStarters.map(x => `<li>${t('warn_date_mismatch')(x.sym, x.firstDate)}</li>`).join('')}</ul>
+    <div style="font-size:10px;opacity:.8;margin-bottom:6px">${t('warn_date_mismatch_note')}</div>
+    <button class="btn-snap-date">${t('warn_date_mismatch_snap')(commonStart)}</button>
+    <button class="btn-dismiss-overlap">${t('dismiss')||'Dismiss'}</button>
+  `;
+
+  // Insert at the very top of panel-results
+  const panel = $('panel-results');
+  if(panel) panel.prepend(banner);
+
+  // Wire snap button: update start-date input and re-run simulation
+  banner.querySelector('.btn-snap-date').addEventListener('click', () => {
+    const inp = $('start-date');
+    if(inp){ inp.value = commonStart; inp.dataset.auto = ''; }
+    banner.remove();
+    runSimulation();
+  });
+
+  // Wire dismiss button
+  banner.querySelector('.btn-dismiss-overlap').addEventListener('click', () => banner.remove());
+}
+
+// ================================================================
 //  MAIN SIMULATION RUN
 // ================================================================
 async function runSimulation(){
@@ -4056,6 +4120,7 @@ async function runSimulation(){
     }
     state.result=result;
     renderResults(result);
+    checkDateOverlap(cachedTickerData, startDate, endDate);
     return;
   }
 
@@ -4160,6 +4225,7 @@ async function runSimulation(){
 
     setTimeout(()=>{
       renderResults(result);
+      checkDateOverlap(tickerData, startDate, endDate);
       // Show per-ticker fetch errors with individual Retry buttons
       if(fetchErrors.length){
         const errBox=document.createElement('div');
