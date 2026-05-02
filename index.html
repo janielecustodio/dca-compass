@@ -1213,6 +1213,8 @@ function setLang(lang) {
   // Update btn-run text (unless loading)
   const btn = $('btn-run');
   if (btn && !btn.disabled) btn.textContent = t('btn_run');
+  // Re-render results panel immediately if a simulation has been run
+  if (state.result) renderResults(state.result);
 }
 
 function renderAboutDCA(){
