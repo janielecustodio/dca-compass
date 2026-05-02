@@ -1680,7 +1680,9 @@ function generateFIPairs(startDate,endDate,annualRate,fiName){
 //  FETCH — Yahoo Finance via CORS proxies with full error context
 // ================================================================
 const PROXIES=[
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
